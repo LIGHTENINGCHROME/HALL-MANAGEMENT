@@ -131,7 +131,9 @@
                 this.message = message;
                 this.show = true;
             },
-            close() { this.show = false; }
+            close() { this.show = false;
+                    window.location.replace('manageEmployee.html')
+             }
         });
 
         Alpine.data('employeeForm', () => ({
