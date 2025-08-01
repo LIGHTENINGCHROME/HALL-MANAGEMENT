@@ -6,7 +6,7 @@
     <title>Manage School & Department</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
+    <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <style>
         /* Custom styles for Montserrat font and scrollable dropdowns */
@@ -39,8 +39,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-   <!-- Placeholders for centralized header and navigation -->
-  <div id="header-placeholder"></div>
+    <div id="header-placeholder"></div>
   <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6">
@@ -58,32 +57,53 @@
                 </div>
             </div>
             
-            <!-- Filter Bar -->
             <div class="bg-white/10 p-4 rounded-lg mb-6 flex flex-wrap items-center justify-between gap-4 text-white">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 flex-wrap">
                     <div class="flex items-center gap-2 bg-gray-900/20 p-1 rounded-lg">
                         <button @click="activeView = 'schools'" :class="{'bg-indigo-600 text-white': activeView === 'schools', 'text-gray-300 hover:bg-white/10': activeView !== 'schools'}" class="px-3 py-1 rounded-md transition-colors text-sm font-semibold">Schools</button>
                         <button @click="activeView = 'departments'" :class="{'bg-indigo-600 text-white': activeView === 'departments', 'text-gray-300 hover:bg-white/10': activeView !== 'departments'}" class="px-3 py-1 rounded-md transition-colors text-sm font-semibold">Departments</button>
                     </div>
                     <button @click="modals.filter = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isAnyFilterActive}"><i class="fas fa-filter"></i> Filter</button>
+                    
+                    <button x-show="selectedItems.length > 0" @click="deselectAll()" x-transition class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button bg-yellow-400 text-black hover:bg-yellow-500">
+                        <i class="fas fa-eraser"></i> Deselect All
+                    </button>
                 </div>
-                <div class="flex items-center gap-2 bg-gray-900/20 p-1 rounded-lg">
-                    <button @click="viewMode = 'card'" :class="{'bg-indigo-600 text-white': viewMode === 'card', 'text-gray-300 hover:bg-white/10': viewMode !== 'card'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-th-large"></i></button>
-                    <button @click="viewMode = 'table'" :class="{'bg-indigo-600 text-white': viewMode === 'table', 'text-gray-300 hover:bg-white/10': viewMode !== 'table'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-list"></i></button>
+                <div class="flex items-center gap-2">
+                    <div class="relative" @click.away="modals.sortOptionsOpen = false">
+                        <button @click="modals.sortOptionsOpen = !modals.sortOptionsOpen" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button bg-gray-900/20">
+                            <i class="fas fa-sort-amount-down"></i> Sort
+                        </button>
+                        <div x-show="modals.sortOptionsOpen" x-transition class="absolute right-0 mt-2 w-52 bg-white text-gray-800 rounded-md shadow-lg z-20">
+                            <a @click="applySort('name')" href="#" class="block px-4 py-2 text-sm hover:bg-gray-100" :class="{'font-bold text-indigo-600': sort.key === 'name'}">
+                                Sort by Name
+                                <i x-show="sort.key === 'name' && sort.direction === 'asc'" class="fas fa-arrow-up ml-2"></i>
+                                <i x-show="sort.key === 'name' && sort.direction === 'desc'" class="fas fa-arrow-down ml-2"></i>
+                            </a>
+                            <a @click="applySort('date')" href="#" class="block px-4 py-2 text-sm hover:bg-gray-100" :class="{'font-bold text-indigo-600': sort.key === 'date'}">
+                                Sort by Date Added
+                                <i x-show="sort.key === 'date' && sort.direction === 'asc'" class="fas fa-arrow-up ml-2"></i>
+                                <i x-show="sort.key === 'date' && sort.direction === 'desc'" class="fas fa-arrow-down ml-2"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-gray-900/20 p-1 rounded-lg">
+                        <button @click="viewMode = 'card'" :class="{'bg-indigo-600 text-white': viewMode === 'card', 'text-gray-300 hover:bg-white/10': viewMode !== 'card'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-th-large"></i></button>
+                        <button @click="viewMode = 'table'" :class="{'bg-indigo-600 text-white': viewMode === 'table', 'text-gray-300 hover:bg-white/10': viewMode !== 'table'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-list"></i></button>
+                    </div>
                 </div>
             </div>
 
-            <!-- MODALS -->
             <div x-show="modals.filter" @click.away="modals.filter = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
                     <button @click="modals.filter = false" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-                    <!-- School Filter -->
                     <div x-show="activeView === 'schools'">
                         <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter Schools</h3>
                         <div class="space-y-4 text-sm">
                             <div class="relative" @click.away="modals.schoolFilterOpen = false">
                                 <label class="font-semibold">School Name:</label>
-                                <input type="text" x-model="filters.schoolSearchTerm" @focus="modals.schoolFilterOpen = true" @input.debounce.300ms="filters.schoolId = ''" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
+                                <input type="text" x-model="filters.school_nameSearchTerm" @focus="modals.schoolFilterOpen = true" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
                                 <div x-show="modals.schoolFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
                                     <template x-for="school in filteredSchoolsForFilter" :key="school.unique_id"><div @click="selectSchoolForFilter(school.unique_id)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="school.school_name"></div></template>
                                 </div>
@@ -91,20 +111,19 @@
                             <div><label class="font-semibold">Dean Name:</label><input type="text" x-model.debounce.300ms="filters.deanName" class="w-full p-2 border rounded mt-1"></div>
                         </div>
                     </div>
-                    <!-- Department Filter -->
                     <div x-show="activeView === 'departments'">
                          <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter Departments</h3>
                         <div class="space-y-4 text-sm">
                             <div class="relative" @click.away="modals.schoolFilterOpen = false">
                                 <label class="font-semibold">School Name:</label>
-                                <input type="text" x-model="filters.schoolSearchTerm" @focus="modals.schoolFilterOpen = true" @input.debounce.300ms="filters.schoolId = ''" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
+                                <input type="text" x-model="filters.dept_schoolSearchTerm" @focus="modals.schoolFilterOpen = true" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
                                 <div x-show="modals.schoolFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
                                     <template x-for="school in filteredSchoolsForFilter" :key="school.unique_id"><div @click="selectSchoolForFilter(school.unique_id)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="school.school_name"></div></template>
                                 </div>
                             </div>
                              <div class="relative" @click.away="modals.departmentFilterOpen = false">
                                 <label class="font-semibold">Department Name:</label>
-                                <input type="text" x-model="filters.departmentSearchTerm" @focus="modals.departmentFilterOpen = true" @input.debounce.300ms="filters.departmentId = ''" placeholder="Type to search department..." class="w-full p-2 border rounded mt-1">
+                                <input type="text" x-model="filters.dept_nameSearchTerm" @focus="modals.departmentFilterOpen = true" placeholder="Type to search department..." class="w-full p-2 border rounded mt-1">
                                 <div x-show="modals.departmentFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
                                     <template x-for="dept in filteredDepartmentsForFilter" :key="dept.unique_id"><div @click="selectDepartmentForFilter(dept.unique_id)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="dept.department_name"></div></template>
                                 </div>
@@ -116,7 +135,6 @@
                 </div>
             </div>
             
-            <!-- Confirmation Modal -->
             <div x-show="modals.confirmDelete" @click.away="modals.confirmDelete = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center">
                     <h3 class="text-lg font-semibold text-gray-800">Confirm Deletion</h3>
@@ -127,15 +145,20 @@
                     </div>
                 </div>
             </div>
+            <div x-show="notification.show" @click.away="notification.show = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+                    <div class="flex-shrink-0 mx-auto mb-4"><i class="fas text-5xl" :class="{ 'fa-check-circle text-green-500': notification.success, 'fa-times-circle text-red-500': !notification.success }"></i></div>
+                    <h3 class="text-lg font-medium text-gray-900" x-text="notification.title"></h3>
+                    <div class="mt-2"><p class="text-sm text-gray-600" x-text="notification.message" style="word-wrap: break-word;"></p></div>
+                    <div class="mt-4"><button @click="notification.show = false" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700">OK</button></div>
+                </div>
+            </div>
 
-            <!-- Loading/Error State -->
+
             <div x-show="isLoading || errorMessage" class="p-4 text-center text-white"><span x-show="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Loading Data...</span><span x-show="errorMessage" class="text-red-400" x-text="errorMessage"></span></div>
 
-            <!-- Views Container -->
             <div x-show="!isLoading && !errorMessage" x-cloak>
-                <!-- Schools View -->
                 <div x-show="activeView === 'schools'">
-                    <!-- Card View -->
                     <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <template x-for="school in filteredSchools" :key="school.unique_id">
                             <div class="bg-white rounded-lg shadow-lg p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
@@ -150,7 +173,6 @@
                             </div>
                         </template>
                     </div>
-                    <!-- Table View -->
                     <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Select</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">School Name</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dean</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th></tr></thead>
@@ -167,9 +189,7 @@
                         </table>
                     </div>
                 </div>
-                <!-- Departments View -->
                 <div x-show="activeView === 'departments'">
-                    <!-- Card View -->
                     <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <template x-for="dept in filteredDepartments" :key="dept.unique_id">
                             <div class="bg-white rounded-lg shadow-lg p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
@@ -185,8 +205,7 @@
                             </div>
                         </template>
                     </div>
-                     <!-- Table View -->
-                    <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
+                     <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Select</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department Name</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">School</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">HOD</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th></tr></thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -212,8 +231,13 @@
     <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
         <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
     </footer>
-
+    
     <script>
+    // Full script with all functions implemented
+    const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
+    const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
+    const base = AppConfig.apiBaseUrl
+
     document.addEventListener('alpine:init', () => {
         Alpine.data('manageS_D', () => ({
             schools: [],
@@ -222,101 +246,124 @@
             multipleSelectionEnabled: false,
             isLoading: true,
             errorMessage: '',
-            activeView: 'schools', // 'schools' or 'departments'
-            viewMode: 'card', // 'card' or 'table'
-            modals: { filter: false, schoolFilterOpen: false, departmentFilterOpen: false, confirmDelete: false },
+            activeView: 'schools',
+            viewMode: 'card',
+            modals: { filter: false, schoolFilterOpen: false, departmentFilterOpen: false, confirmDelete: false, sortOptionsOpen: false },
+            notification: { show: false, success: false, title: '', message: '' },
             filters: {
-                schoolName: '', deanName: '',
-                departmentName: '', schoolId: '', hodName: '',
-                schoolSearchTerm: '', departmentSearchTerm: ''
+                schoolId: '', school_nameSearchTerm: '', deanName: '',
+                departmentId: '', dept_schoolId: '', dept_schoolSearchTerm: '', dept_nameSearchTerm: '', hodName: '',
             },
+            sort: { key: 'date', direction: 'desc' },
 
-            init() { this.loadData(); this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); this.$watch('activeView', () => { this.selectedItems = []; this.resetFilters(); }); },
+            init() { 
+                this.loadData(); 
+                this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); 
+                this.$watch('activeView', () => { 
+                    this.selectedItems = []; 
+                    this.resetFilters(); 
+                }); 
+            },
 
             get filteredSchools() {
-                return this.schools.filter(s => {
+                let filtered = this.schools.filter(s => {
                     const f = this.filters;
                     if (f.schoolId && s.unique_id !== f.schoolId) return false;
-                    if (f.deanName && !s.incharge_name.toLowerCase().includes(f.deanName.toLowerCase())) return false;
+                    if (f.deanName && s.incharge_name && !s.incharge_name.toLowerCase().includes(f.deanName.toLowerCase())) return false;
                     return true;
                 });
+                return this.sortData(filtered, 'school_name');
             },
             get filteredDepartments() {
-                return this.departments.filter(d => {
+                let filtered = this.departments.filter(d => {
                     const f = this.filters;
                     if (f.departmentId && d.unique_id !== f.departmentId) return false;
-                    if (f.schoolId && d.school_id !== f.schoolId) return false;
-                    if (f.hodName && !d.incharge_name.toLowerCase().includes(f.hodName.toLowerCase())) return false;
+                    if (f.dept_schoolId && d.school_id !== f.dept_schoolId) return false;
+                    if (f.hodName && d.incharge_name && !d.incharge_name.toLowerCase().includes(f.hodName.toLowerCase())) return false;
                     return true;
+                });
+                return this.sortData(filtered, 'department_name');
+            },
+            sortData(data, nameKey) {
+                const direction = this.sort.direction === 'asc' ? 1 : -1;
+                return [...data].sort((a, b) => {
+                    if (this.sort.key === 'name') {
+                        return a[nameKey].localeCompare(b[nameKey]) * direction;
+                    }
+                    if (this.sort.key === 'date') {
+                        const dateA = a.created_at ? new Date(a.created_at) : 0;
+                        const dateB = b.created_at ? new Date(b.created_at) : 0;
+                        return (dateA - dateB) * direction;
+                    }
+                    return 0;
                 });
             },
             get filteredSchoolsForFilter() {
-                if (!this.filters.schoolSearchTerm) return this.schools;
-                return this.schools.filter(s => s.school_name.toLowerCase().includes(this.filters.schoolSearchTerm.toLowerCase()));
+                const searchTerm = this.activeView === 'schools' ? this.filters.school_nameSearchTerm : this.filters.dept_schoolSearchTerm;
+                if (!searchTerm) return this.schools;
+                return this.schools.filter(s => s.school_name.toLowerCase().includes(searchTerm.toLowerCase()));
             },
             get filteredDepartmentsForFilter() {
                 let depts = this.departments;
-                if (this.filters.schoolId) {
-                    depts = depts.filter(d => d.school_id === this.filters.schoolId);
+                if (this.filters.dept_schoolId) {
+                    depts = depts.filter(d => d.school_id === this.filters.dept_schoolId);
                 }
-                if (!this.filters.departmentSearchTerm) return depts;
-                return depts.filter(d => d.department_name.toLowerCase().includes(this.filters.departmentSearchTerm.toLowerCase()));
+                if (!this.filters.dept_nameSearchTerm) return depts;
+                return depts.filter(d => d.department_name.toLowerCase().includes(this.filters.dept_nameSearchTerm.toLowerCase()));
             },
-            
             get isAnyFilterActive() {
                 const f = this.filters;
-                return f.schoolId || f.deanName || f.departmentId || f.hodName;
+                return f.schoolId || f.deanName || f.departmentId || f.hodName || f.dept_schoolId;
             },
-
             resetFilters() {
-                this.filters = { schoolName: '', deanName: '', departmentName: '', schoolId: '', hodName: '', schoolSearchTerm: '', departmentSearchTerm: '' };
+                this.filters = { schoolId: '', school_nameSearchTerm: '', deanName: '', departmentId: '', dept_schoolId: '', dept_schoolSearchTerm: '', dept_nameSearchTerm: '', hodName: '' };
             },
-            
+            applySort(key) {
+                if (this.sort.key === key) {
+                    this.sort.direction = this.sort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.sort.key = key;
+                    this.sort.direction = key === 'date' ? 'desc' : 'asc';
+                }
+                this.modals.sortOptionsOpen = false;
+            },
+            deselectAll() {
+                this.selectedItems = [];
+            },
             selectSchoolForFilter(schoolId) {
-                this.filters.schoolId = schoolId;
                 const school = this.schools.find(s => s.unique_id === schoolId);
-                if (school) this.filters.schoolSearchTerm = school.school_name;
-                this.filters.departmentId = '';
-                this.filters.departmentSearchTerm = '';
+                if (this.activeView === 'schools') {
+                    this.filters.schoolId = schoolId;
+                    if (school) this.filters.school_nameSearchTerm = school.school_name;
+                } else {
+                    this.filters.dept_schoolId = schoolId;
+                    if (school) this.filters.dept_schoolSearchTerm = school.school_name;
+                    this.filters.departmentId = '';
+                    this.filters.dept_nameSearchTerm = '';
+                }
                 this.modals.schoolFilterOpen = false;
             },
             selectDepartmentForFilter(deptId) {
                 this.filters.departmentId = deptId;
                 const dept = this.departments.find(d => d.unique_id === deptId);
                 if (dept) {
-                    this.filters.departmentSearchTerm = dept.department_name;
-                    if (!this.filters.schoolId) this.selectSchoolForFilter(dept.school_id);
+                    this.filters.dept_nameSearchTerm = dept.department_name;
+                    if (!this.filters.dept_schoolId) this.selectSchoolForFilter(dept.school_id);
                 }
                 this.modals.departmentFilterOpen = false;
             },
-
-            closeSchoolFilterDropdown() {
-                if (!this.filters.schoolId) this.filters.schoolSearchTerm = '';
-                this.modals.schoolFilterOpen = false;
-            },
-            closeDepartmentFilterDropdown() {
-                if (!this.filters.departmentId) this.filters.departmentSearchTerm = '';
-                this.modals.departmentFilterOpen = false;
-            },
-
             async loadData() {
                 this.isLoading = true;
                 this.errorMessage = '';
                 try {
-                    const [schoolResponse, departmentResponse] = await Promise.all([
-                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'),
-                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department')
-                    ]);
-
+                    const [schoolResponse, departmentResponse] = await Promise.all([ fetch(urlsch), fetch(urldept) ]);
                     if (!schoolResponse.ok) throw new Error(`Schools API Error: ${schoolResponse.statusText}`);
                     if (!departmentResponse.ok) throw new Error(`Departments API Error: ${departmentResponse.statusText}`);
-
-                    this.schools = await schoolResponse.json();
+                    const schoolsData = await schoolResponse.json();
                     const departmentsData = await departmentResponse.json();
-                    
+                    this.schools = schoolsData.map(s => ({...s, created_at: s.created_at || new Date().toISOString()}));
                     const schoolMap = new Map(this.schools.map(s => [s.unique_id, s.school_name]));
-                    this.departments = departmentsData.map(d => ({...d, school_name: schoolMap.get(d.school_id) || 'N/A' }));
-
+                    this.departments = departmentsData.map(d => ({...d, school_name: schoolMap.get(d.school_id) || 'N/A', created_at: d.created_at || new Date().toISOString() }));
                 } catch (error) {
                     this.errorMessage = `An error occurred: ${error.message}. Please try again later.`;
                     console.error('Error loading data:', error);
@@ -324,7 +371,6 @@
                     this.isLoading = false;
                 }
             },
-
             toggleItemSelection(itemId) {
                 if (this.multipleSelectionEnabled) {
                     const index = this.selectedItems.indexOf(itemId);
@@ -334,44 +380,42 @@
                     this.selectedItems = this.selectedItems.includes(itemId) ? [] : [itemId];
                 }
             },
-
             modifySelectedItem() {
                 if (this.selectedItems.length !== 1) return;
                 const id = this.selectedItems[0];
                 const type = this.activeView === 'schools' ? 'school' : 'department';
                 window.location.href = `modifySD.html?id=${id}&type=${type}`;
             },
-
             confirmDeletion() {
                 if (this.selectedItems.length > 0) {
                     this.modals.confirmDelete = true;
                 }
             },
-
             async deleteSelectedItems() {
                 this.modals.confirmDelete = false;
                 const type = this.activeView === 'schools' ? 'school' : 'department';
-                const endpoint = `https://hall-management.nirmaljyotib.workers.dev/api/${type}/delete`;
-
-                const promises = this.selectedItems.map(id => 
-                    fetch(`${endpoint}/${id}`, { method: 'DELETE' })
-                );
-
+                const endpoint = `${base}/${type}`;
+                const promises = this.selectedItems.map(id => fetch(`${endpoint}/${id}`, { method: 'DELETE' }));
                 try {
                     const responses = await Promise.all(promises);
                     const failed = responses.filter(res => !res.ok);
-
                     if (failed.length > 0) {
                         throw new Error(`${failed.length} of ${this.selectedItems.length} deletions failed.`);
                     }
-                    
+                    this.showNotification(true, 'Success', `${this.selectedItems.length} item(s) deleted successfully.`);
                     this.selectedItems = [];
                     await this.loadData();
-                    // You can add a success notification here if you like
                 } catch (error) {
                     console.error('Deletion error:', error);
-                    // You can add an error notification here
+                    this.showNotification(false, 'Deletion Failed', error.message);
                 }
+            },
+            showNotification(success, title, message) {
+                this.notification.success = success;
+                this.notification.title = title;
+                this.notification.message = message;
+                this.notification.show = true;
+                setTimeout(() => this.notification.show = false, 5000);
             }
         }));
     });

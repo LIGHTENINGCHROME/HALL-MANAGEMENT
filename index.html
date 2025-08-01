@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Alpine.js for interactivity -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="config.js"></script>
     <style>
         /* Custom styles for Montserrat font */
         body {
@@ -126,6 +127,10 @@
     </footer>
 
     <script>
+        const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
+        const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
+         const urlhalls = AppConfig.apiBaseUrl + AppConfig.endpoints.allHall
+
         document.addEventListener('alpine:init', () => {
             Alpine.data('dashboardData', () => ({
                 counts: {
@@ -153,9 +158,9 @@
                 async init() {
                     try {
                         const [schoolRes, departmentRes, hallRes] = await Promise.all([
-                            fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'),
-                            fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department'),
-                            fetch('https://hall-management.nirmaljyotib.workers.dev/api/hall/all-hall')
+                            fetch(urlsch),
+                            fetch(urldept),
+                            fetch(urlhalls)
                         ]);
 
                         if (!schoolRes.ok) throw new Error('Failed to fetch schools');

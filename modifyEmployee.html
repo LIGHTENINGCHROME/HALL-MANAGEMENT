@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="config.js"></script>
     <style>
         /* Custom styles for Montserrat font and scrollable dropdowns */
         body {
@@ -116,6 +117,10 @@
     </div>
 
     <script>
+    const urlemps = AppConfig.apiBaseUrl + AppConfig.endpoints.allemp
+    const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
+    const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
+    const urlemp = AppConfig.apiBaseUrl + AppConfig.endpoints.emp
     document.addEventListener('alpine:init', () => {
         Alpine.store('modal', {
             show: false,
@@ -162,7 +167,7 @@
             async loadEmployeeData() {
                 this.isLoading.employee = true;
                 try {
-                    const response = await fetch(`https://hall-management.nirmaljyotib.workers.dev/api/employee/all-employees`);
+                    const response = await fetch(urlemps);
                     if (!response.ok) throw new Error('Could not fetch employee list.');
                     
                     const data = await response.json();
@@ -209,8 +214,8 @@
             },
             get filteredSections() { return this.sectionOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.section.toLowerCase())); },
             
-            async fetchSchools() { this.isLoading.schools = true; try { const r = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.schoolOptions = d.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); } catch (e) { Alpine.store('modal').open(false, 'Could not load school data.'); } finally { this.isLoading.schools = false; } },
-            async fetchDepartments() { this.isLoading.departments = true; try { const r = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department'); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.departmentOptions = d.filter(t => t && t.unique_id && t.department_name && t.school_id).map(t => ({ value: t.unique_id, label: t.department_name, schoolId: t.school_id })); } catch (e) { Alpine.store('modal').open(false, 'Could not load department data.'); } finally { this.isLoading.departments = false; } },
+            async fetchSchools() { this.isLoading.schools = true; try { const r = await fetch(urlsch); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.schoolOptions = d.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); } catch (e) { Alpine.store('modal').open(false, 'Could not load school data.'); } finally { this.isLoading.schools = false; } },
+            async fetchDepartments() { this.isLoading.departments = true; try { const r = await fetch(urldept); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.departmentOptions = d.filter(t => t && t.unique_id && t.department_name && t.school_id).map(t => ({ value: t.unique_id, label: t.department_name, schoolId: t.school_id })); } catch (e) { Alpine.store('modal').open(false, 'Could not load department data.'); } finally { this.isLoading.departments = false; } },
             
             getLabelById(options, id) { const option = options.find(o => o.value === id); return option ? option.label : null; },
             
@@ -273,7 +278,7 @@
                 console.log('Sending Payload:', JSON.stringify(payload, null, 2));
 
                 try {
-                    const response = await fetch(`https://hall-management.nirmaljyotib.workers.dev/api/employee/${this.employeeId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const response = await fetch(`${urlemp}/${this.employeeId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (!response.ok) {
                         const errorText = await response.text();
                         try {

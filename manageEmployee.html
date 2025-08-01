@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="config.js"></script>
     <style>
         /* Custom styles for Montserrat font and scrollable dropdowns */
         body {
@@ -318,8 +319,13 @@
             async loadData() {
                 this.isLoading = true;
                 this.errorMessage = '';
+
+                const urlemps = AppConfig.apiBaseUrl + AppConfig.endpoints.allemp
+                const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
+                const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
+
                 try {
-                    const employeeResponse = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/employee/all-employees');
+                    const employeeResponse = await fetch(urlemps);
                     if (!employeeResponse.ok) throw new Error('Could not fetch employees');
                     const employeeData = await employeeResponse.json();
                     
@@ -331,8 +337,8 @@
                     this.isLoading = false;
 
                     const [schoolResponse, departmentResponse] = await Promise.all([
-                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'),
-                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department')
+                        fetch(urlsch),
+                        fetch(urldept)
                     ]);
 
                     if (!schoolResponse.ok) throw new Error('Could not fetch schools');
@@ -394,8 +400,8 @@
             },
 
             async deleteSelectedItems() {
+                const endpoint = AppConfig.apiBaseUrl + AppConfig.endpoints.emp
                 this.modals.confirmDelete = false;
-                const endpoint = 'https://hall-management.nirmaljyotib.workers.dev/api/employee';
 
                 const promises = this.selectedItems.map(id => 
                     fetch(`${endpoint}/${id}`, { method: 'DELETE' })

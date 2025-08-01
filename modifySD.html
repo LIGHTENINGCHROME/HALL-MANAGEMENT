@@ -14,6 +14,7 @@
         }
         [x-cloak] { display: none !important; }
     </style>
+    <script src="config.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen flex flex-col">
@@ -129,6 +130,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
+        const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
+        const base = AppConfig.apiBaseUrl
         document.addEventListener('alpine:init', () => {
             Alpine.data('modifyForm', () => ({
                 type: '',
@@ -168,7 +171,7 @@
 
                 async fetchSchools() {
                     try {
-                        const response = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools');
+                        const response = await fetch(urlsch);
                         if (!response.ok) throw new Error('Could not load schools');
                         const data = await response.json();
                         this.schools = (Array.isArray(data) ? data : data.schools || data.data || []).filter(s => s && s.unique_id && s.school_name);
@@ -180,7 +183,7 @@
                 async fetchDetails() {
                     this.isLoading = true;
                     const endpoint = this.type === 'school' ? 'all-schools' : 'all-department';
-                    const listUrl = `https://hall-management.nirmaljyotib.workers.dev/api/${this.type}/${endpoint}`;
+                    const listUrl = `${base}/${this.type}/${endpoint}`;
                     try {
                         const response = await fetch(listUrl);
                         if (!response.ok) throw new Error('Could not fetch item details.');
@@ -226,7 +229,7 @@
                 },
 
                 async submitForm() {
-                    const url = `https://hall-management.nirmaljyotib.workers.dev/api/${this.type}/${this.id}`;
+                    const url = `${base}/${this.type}/${this.id}`;
                     let payload = {};
 
                     if (this.type === 'school') {

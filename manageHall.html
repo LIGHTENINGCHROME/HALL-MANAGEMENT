@@ -6,8 +6,8 @@
     <title>Manage Halls</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="config.js"></script>
     <style>
         /* Custom styles for Montserrat font and scrollable dropdowns */
         body {
@@ -57,22 +57,45 @@
                 </div>
             </div>
             
-            <!-- Filter Bar -->
             <div class="bg-white/10 p-4 rounded-lg mb-6 flex flex-wrap items-center justify-between gap-4 text-white">
-                <div class="flex items-center gap-4">
+                <div class="flex items-center gap-4 flex-wrap">
                     <span class="font-semibold">Filters:</span>
                     <button @click="modals.hallDetails = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('hallDetails')}"><i class="fas fa-building"></i> Hall Details</button>
                     <button @click="modals.belongsTo = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('belongsTo')}"><i class="fas fa-sitemap"></i> Belongs To</button>
                     <button @click="modals.features = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('features')}"><i class="fas fa-star"></i> Features</button>
                     <button @click="modals.status = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('status')}"><i class="fas fa-check-circle"></i> Status</button>
+                    
+                    <button x-show="selectedItems.length > 0" @click="deselectAll()" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button bg-yellow-400 text-black hover:bg-yellow-500">
+                        <i class="fas fa-eraser"></i> Deselect All
+                    </button>
                 </div>
-                <div class="flex items-center gap-2 bg-gray-900/20 p-1 rounded-lg">
-                    <button @click="viewMode = 'card'" :class="{'bg-indigo-600 text-white': viewMode === 'card', 'text-gray-300 hover:bg-white/10': viewMode !== 'card'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-th-large"></i></button>
-                    <button @click="viewMode = 'table'" :class="{'bg-indigo-600 text-white': viewMode === 'table', 'text-gray-300 hover:bg-white/10': viewMode !== 'table'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-list"></i></button>
+
+                <div class="flex items-center gap-2">
+                    <div class="relative" @click.away="modals.sortOptionsOpen = false">
+                        <button @click="modals.sortOptionsOpen = !modals.sortOptionsOpen" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button bg-gray-900/20">
+                            <i class="fas fa-sort-amount-down"></i> Sort
+                        </button>
+                        <div x-show="modals.sortOptionsOpen" x-transition class="absolute right-0 mt-2 w-48 bg-white text-gray-800 rounded-md shadow-lg z-20">
+                            <a @click="applySort('name')" href="#" class="block px-4 py-2 text-sm hover:bg-gray-100" :class="{'font-bold text-indigo-600': sort.key === 'name'}">
+                                Sort by Name
+                                <i x-show="sort.key === 'name' && sort.direction === 'asc'" class="fas fa-arrow-up ml-2"></i>
+                                <i x-show="sort.key === 'name' && sort.direction === 'desc'" class="fas fa-arrow-down ml-2"></i>
+                            </a>
+                            <a @click="applySort('date')" href="#" class="block px-4 py-2 text-sm hover:bg-gray-100" :class="{'font-bold text-indigo-600': sort.key === 'date'}">
+                                Sort by Date Added
+                                <i x-show="sort.key === 'date' && sort.direction === 'asc'" class="fas fa-arrow-up ml-2"></i>
+                                <i x-show="sort.key === 'date' && sort.direction === 'desc'" class="fas fa-arrow-down ml-2"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 bg-gray-900/20 p-1 rounded-lg">
+                        <button @click="viewMode = 'card'" :class="{'bg-indigo-600 text-white': viewMode === 'card', 'text-gray-300 hover:bg-white/10': viewMode !== 'card'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-th-large"></i></button>
+                        <button @click="viewMode = 'table'" :class="{'bg-indigo-600 text-white': viewMode === 'table', 'text-gray-300 hover:bg-white/10': viewMode !== 'table'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-list"></i></button>
+                    </div>
                 </div>
             </div>
 
-            <!-- MODALS -->
             <div x-show="modals.hallDetails" @click.away="modals.hallDetails = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg relative">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -176,8 +199,7 @@
                     <button @click="modals.status = false" class="w-full mt-6 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Apply Filter</button>
                 </div>
             </div>
-             <!-- Confirmation Modal -->
-            <div x-show="modals.confirmDelete" @click.away="modals.confirmDelete = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+             <div x-show="modals.confirmDelete" @click.away="modals.confirmDelete = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center">
                     <h3 class="text-lg font-semibold text-gray-800">Confirm Deletion</h3>
                     <p class="text-gray-600 my-4">Are you sure you want to delete the selected item(s)? This action cannot be undone.</p>
@@ -188,7 +210,6 @@
                 </div>
             </div>
             
-            <!-- Notification Modal -->
             <div x-show="notification.show" @click.away="notification.show = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
                     <div class="flex-shrink-0 mx-auto mb-4">
@@ -204,12 +225,9 @@
                 </div>
             </div>
 
-            <!-- Loading/Error State -->
             <div x-show="isLoading || errorMessage" class="p-4 text-center text-white"><span x-show="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Loading Data...</span><span x-show="errorMessage" class="text-red-400" x-text="errorMessage"></span></div>
 
-            <!-- Views Container -->
             <div x-show="!isLoading && !errorMessage" x-cloak>
-                <!-- Card View -->
                 <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <template x-for="hall in filteredHalls" :key="hall.unique_id">
                         <div class="bg-white rounded-lg shadow-lg p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
@@ -261,7 +279,6 @@
                     </template>
                 </div>
 
-                <!-- Table View -->
                 <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Select</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hall Details</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Belongs To</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Incharge</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Features</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th></tr></thead>
@@ -302,7 +319,8 @@
             isLoading: true,
             errorMessage: '',
             viewMode: 'card', // 'card' or 'table'
-            modals: { hallDetails: false, belongsTo: false, features: false, schoolFilterOpen: false, departmentFilterOpen: false, hallNameOpen: false, status: false, confirmDelete: false },
+            // NEW: Added sortOptionsOpen to modals state
+            modals: { hallDetails: false, belongsTo: false, features: false, schoolFilterOpen: false, departmentFilterOpen: false, hallNameOpen: false, status: false, confirmDelete: false, sortOptionsOpen: false },
             notification: { show: false, success: false, title: '', message: '' },
             filters: {
                 name: '', type: '', capacity: '', floor: '', zone: '',
@@ -310,11 +328,17 @@
                 features: [], status: '',
                 schoolSearchTerm: '', departmentSearchTerm: '', nameSearchTerm: ''
             },
+            // NEW: State for sorting
+            sort: {
+                key: 'date', // 'date' or 'name'
+                direction: 'desc' // 'asc' or 'desc'
+            },
 
             init() { this.loadData(); this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); },
 
+            // MODIFIED: Added sorting logic to the filteredHalls getter
             get filteredHalls() {
-                return this.halls.filter(hall => {
+                let filtered = this.halls.filter(hall => {
                     const f = this.filters;
                     if (f.name && hall.name !== f.name) return false;
                     if (f.type && hall.type.toUpperCase() !== f.type) return false;
@@ -333,6 +357,21 @@
                     if (f.features.length > 0 && !f.features.every(feature => hall.features.includes(feature))) return false;
                     if (f.status && hall.status !== f.status) return false;
                     return true;
+                });
+
+                // Apply sorting after filtering
+                const direction = this.sort.direction === 'asc' ? 1 : -1;
+                return filtered.sort((a, b) => {
+                    if (this.sort.key === 'name') {
+                        return a.name.localeCompare(b.name) * direction;
+                    }
+                    if (this.sort.key === 'date') {
+                        // Ensure created_at exists before creating a date
+                        const dateA = a.created_at ? new Date(a.created_at) : 0;
+                        const dateB = b.created_at ? new Date(b.created_at) : 0;
+                        return (dateA - dateB) * direction;
+                    }
+                    return 0;
                 });
             },
             
@@ -368,7 +407,25 @@
             resetFilters() {
                 this.filters = { name: '', type: '', capacity: '', floor: '', zone: '', ownerType: '', schoolId: '', departmentId: '', features: [], status: '', schoolSearchTerm: '', departmentSearchTerm: '', nameSearchTerm: '' };
             },
+
+            // NEW: Method to apply and toggle sorting
+            applySort(key) {
+                if (this.sort.key === key) {
+                    // If same key, toggle direction
+                    this.sort.direction = this.sort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    // If new key, set it and apply default direction
+                    this.sort.key = key;
+                    this.sort.direction = key === 'date' ? 'desc' : 'asc'; // Newest first for date, A-Z for name
+                }
+                this.modals.sortOptionsOpen = false; // Close dropdown after selection
+            },
             
+            // NEW: Method to deselect all items
+            deselectAll() {
+                this.selectedItems = [];
+            },
+
             selectSchoolForFilter(schoolId) {
                 this.filters.schoolId = schoolId;
                 const school = this.schoolOptions.find(s => s.value === schoolId);
@@ -420,7 +477,8 @@
                 this.isLoading = true;
                 this.errorMessage = '';
                 try {
-                    const hallResponse = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/hall/all-hall');
+                    const url = AppConfig.apiBaseUrl + AppConfig.endpoints.allHall
+                    const hallResponse = await fetch(url);
                     if (!hallResponse.ok) throw new Error(`Halls API Error: ${hallResponse.statusText}`);
                     const hallData = await hallResponse.json();
                     const hallList = (Array.isArray(hallData) ? hallData : hallData.halls || hallData.data || []).filter(h => h && h.unique_id && h.name);
@@ -452,9 +510,12 @@
                     });
                     this.isLoading = false;
 
+                    const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
+                    const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
+
                     const [schoolResponse, departmentResponse] = await Promise.all([
-                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'),
-                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department')
+                        fetch(urlsch),
+                        fetch(urldept)
                     ]);
 
                     if (!schoolResponse.ok || !departmentResponse.ok) {
@@ -536,7 +597,8 @@
 
             async deleteSelectedItems() {
                 this.modals.confirmDelete = false;
-                const endpoint = 'https://hall-management.nirmaljyotib.workers.dev/api/hall';
+                const urlhall = AppConfig.apiBaseUrl + AppConfig.endpoints.hall
+                const endpoint = urlhall;
 
                 const promises = this.selectedItems.map(id => 
                     fetch(`${endpoint}/${id}`, { method: 'DELETE' })
