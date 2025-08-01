@@ -101,7 +101,7 @@
 
                     <div class="flex justify-end space-x-4 pt-6 border-t">
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">SUBMIT</button>
-                        <button type="reset" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">CLEAR</button>
+                        <button type="reset" @click.prevent="resetForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">CLEAR</button>
                     </div>
                 </form>
             </div>
@@ -141,14 +141,13 @@
             selectedDepartmentId: null,
             selectedDeptSchoolId: null,
             selectedSectionId: null,
-            selectedDesignationId: null, // ADDED: for designation
+            selectedDesignationId: null, 
             contactNumber: '',
-            dropdowns: { school: false, department: false, deptSchool: false, section: false, designation: false }, // ADDED: designation dropdown state
-            searchTerms: { school: '', department: '', deptSchool: '', section: '', designation: '' }, // ADDED: designation search term
+            dropdowns: { school: false, department: false, deptSchool: false, section: false, designation: false }, 
+            searchTerms: { school: '', department: '', deptSchool: '', section: '', designation: '' }, 
             isLoading: { schools: true, departments: true },
             schoolOptions: [], 
             departmentOptions: [],
-            // ADDED: options for the designation dropdown
             designationOptions: [
                 { value: 'HOD', label: 'HOD' },
                 { value: 'ADMIN', label: 'ADMIN' },
@@ -185,7 +184,6 @@
                 return depts.filter(o => o.label.toLowerCase().includes(this.searchTerms.department.toLowerCase()));
             },
             get filteredSections() { return this.sectionOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.section.toLowerCase())); },
-            // ADDED: getter for filtering designations
             get filteredDesignations() { return this.designationOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.designation.toLowerCase())); },
             
             async fetchSchools() { this.isLoading.schools = true; try { const r = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.schoolOptions = d.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); } catch (e) { Alpine.store('modal').open(false, 'Could not load school data.'); } finally { this.isLoading.schools = false; } },
@@ -204,21 +202,34 @@
                         if (!this.selectedDeptSchoolId) { this.selectedDeptSchoolId = dept.schoolId; this.searchTerms.deptSchool = this.getLabelById(this.schoolOptions, dept.schoolId); }
                     }
                 } else if (type === 'section') { this.selectedSectionId = value; this.searchTerms.section = this.getLabelById(this.sectionOptions, value); }
-                // ADDED: Logic to handle designation selection
                 else if (type === 'designation') { this.selectedDesignationId = value; this.searchTerms.designation = this.getLabelById(this.designationOptions, value); }
                 this.dropdowns[type] = false;
             },
 
+            // MODIFIED: This function now ONLY resets fields that are dependent on the "Belongs To" dropdown.
+            // It will no longer reset the Designation field.
             resetSelections() {
-                this.selectedSchoolId = null; this.selectedDepartmentId = null; this.selectedDeptSchoolId = null; this.selectedSectionId = null; this.selectedDesignationId = null; // ADDED
-                this.searchTerms = { school: '', department: '', deptSchool: '', section: '', designation: '' }; // ADDED
+                this.selectedSchoolId = null; 
+                this.selectedDepartmentId = null; 
+                this.selectedDeptSchoolId = null; 
+                this.selectedSectionId = null;
+                
+                this.searchTerms.school = '';
+                this.searchTerms.department = '';
+                this.searchTerms.deptSchool = '';
+                this.searchTerms.section = '';
             },
 
+            // MODIFIED: This function now performs a FULL reset of all fields for the "CLEAR" button.
             resetForm() {
                 document.getElementById('addEmployeeForm').reset();
                 this.selectedBelongsTo = 'administration';
                 this.contactNumber = '';
-                this.resetSelections();
+                this.resetSelections(); // Resets dependent fields
+                
+                // Explicitly reset designation fields for a full clear
+                this.selectedDesignationId = null; 
+                this.searchTerms.designation = '';
             },
 
             async submitForm() {
@@ -234,7 +245,6 @@
                     return;
                 }
                 
-                // ADDED: validation for designation
                 if (!this.selectedDesignationId) {
                     Alpine.store('modal').open(false, 'Please select a designation.');
                     return;
@@ -244,7 +254,7 @@
                     employee_name: form.employee_name.value,
                     employee_email: form.employee_email.value,
                     employee_mobile: this.contactNumber,
-                    designation: this.selectedDesignationId, // MODIFIED: Get designation from state
+                    designation: this.selectedDesignationId,
                     belongs_to: this.selectedBelongsTo.toUpperCase(),
                 };
 
