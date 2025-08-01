@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Hall</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom styles for Montserrat font and scrollable dropdowns */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            /* Applying gradient directly to body */
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed; /* Ensures gradient covers full viewport even on scroll */
+        }
+        /* Custom scrollbar for dropdowns */
+        .scrollable-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-track {
+            background: #2d3748; /* Dark blue-gray */
+            border-radius: 10px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-thumb {
+            background: #4a5568; /* Slightly lighter dark blue-gray */
+            border-radius: 10px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Even lighter */
+        }
+        /* Hide default arrow for select elements that are not multiple */
+        select:not([multiple]) {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* Make space for the custom arrow */
+        }
+    </style>
+    <!-- Google Fonts - Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+   <div id="header-placeholder"></div>
+<div id="nav-placeholder"></div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow p-6">
+        <div class="container mx-auto bg-[rgba(0,0,0,0.15)] p-8 rounded-lg shadow-xl" x-data="{ selectedBelongsTo: '', selectedFeatures: [] }">
+            <h2 class="text-3xl font-bold text-center text-white mb-8">ADD HALL</h2>
+
+            <form id="addHallForm" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- DETAILS Section -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">DETAILS</h3>
+
+                    <div class="mb-5 relative">
+                        <label for="hallType" class="block text-gray-600 text-sm font-medium mb-2">TYPE</label>
+                        <select id="hallType" name="hall_type" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT HALL TYPE</option>
+                            <option value="auditorium">Auditorium</option>
+                            <option value="conference_room">Conference Room</option>
+                            <option value="lecture_hall">Lecture Hall</option>
+                            <option value="seminar_hall">Seminar Hall</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-5">
+                        <label for="hallName" class="block text-gray-600 text-sm font-medium mb-2">NAME</label>
+                        <input type="text" id="hallName" name="hall_name" placeholder="ENTER HALL NAME" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+
+                    <div class="mb-5">
+                        <label for="hallCapacity" class="block text-gray-600 text-sm font-medium mb-2">CAPACITY</label>
+                        <input type="number" id="hallCapacity" name="hall_capacity" placeholder="ENTER HALL CAPACITY" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                </div>
+
+                <!-- OTHER DETAILS Section -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">OTHER DETAILS</h3>
+
+                    <div class="mb-5 relative" x-data="{ open: false, featuresOptions: [
+                        { value: 'projector', label: 'Projector' },
+                        { value: 'whiteboard', label: 'Whiteboard' },
+                        { value: 'sound_system', label: 'Sound System' },
+                        { value: 'air_conditioning', label: 'Air Conditioning' },
+                        { value: 'wifi', label: 'Wi-Fi' },
+                        { value: 'microphone', label: 'Microphone' },
+                        { value: 'speakers', label: 'Speakers' },
+                        { value: 'stage', label: 'Stage' },
+                        { value: 'dimmable_lights', label: 'Dimmable Lights' },
+                        { value: 'wheelchair_accessible', label: 'Wheelchair Accessible' }
+                    ]}">
+                        <label for="features" class="block text-gray-600 text-sm font-medium mb-2">FEATURES</label>
+                        <div class="relative">
+                            <button type="button" @click="open = !open" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800 text-left flex justify-between items-center">
+                                <!-- Added truncate class here -->
+                                <span class="truncate" x-text="selectedFeatures.length === 0 ? 'CLICK TO ADD FEATURES' : selectedFeatures.map(f => featuresOptions.find(o => o.value === f)?.label || f).join(', ')"></span>
+                                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
+                            </button>
+                            <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto scrollable-dropdown">
+                                <template x-for="feature in featuresOptions" :key="feature.value">
+                                    <label :for="`feature_${feature.value}`" class="flex items-center px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-800">
+                                        <input type="checkbox" :id="`feature_${feature.value}`" :value="feature.value" x-model="selectedFeatures" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 rounded">
+                                        <span x-text="feature.label"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                        <!-- Hidden input to submit selectedFeatures as an array -->
+                        <template x-for="feature in selectedFeatures" :key="feature">
+                            <input type="hidden" name="hall_features[]" :value="feature">
+                        </template>
+                    </div>
+
+                    <div class="mb-5 relative">
+                        <label for="floor" class="block text-gray-600 text-sm font-medium mb-2">FLOOR</label>
+                        <select id="floor" name="hall_floor" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT FLOOR</option>
+                            <option value="ground">Ground Floor</option>
+                            <option value="first">First Floor</option>
+                            <option value="second">Second Floor</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-5 relative">
+                        <label for="zone" class="block text-gray-600 text-sm font-medium mb-2">ZONE</label>
+                        <select id="zone" name="hall_zone" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT ZONE</option>
+                            <option value="north">North Zone</option>
+                            <option value="south">South Zone</option>
+                            <option value="east">East Zone</option>
+                            <option value="west">West Zone</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-5">
+                        <label for="image" class="block text-gray-600 text-sm font-medium mb-2">IMAGE</label>
+                        <input type="file" id="image" name="hall_image" class="block w-full text-gray-800 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- AVAILABILITY Section -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-6 border-b pb-3">AVAILABILITY</h3>
+
+                    <div class="mb-5">
+                        <label class="block text-gray-600 text-sm font-medium mb-2">YES</label>
+                        <div class="flex items-center space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="availability" value="yes" checked>
+                                <span class="ml-2 text-gray-800">YES</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" class="form-radio h-5 w-5 text-blue-600" name="availability" value="no">
+                                <span class="ml-2 text-gray-800">NO</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-5 relative">
+                        <label for="belongsTo" class="block text-gray-600 text-sm font-medium mb-2">BELONGS TO</label>
+                        <select id="belongsTo" name="belongs_to" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800" x-model="selectedBelongsTo">
+                            <option value="" disabled selected>SELECT TYPE</option>
+                            <option value="school">School</option>
+                            <option value="department">Department</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+
+                    <!-- School Name Section (Conditionally displayed) -->
+                    <div class="mb-5 relative" x-show="selectedBelongsTo === 'school'">
+                        <label for="schoolName" class="block text-gray-600 text-sm font-medium mb-2">SCHOOL NAME</label>
+                        <select id="schoolName" name="school_name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT SCHOOL</option>
+                            <option value="school_of_engineering">School of Engineering</option>
+                            <option value="school_of_arts">School of Arts</option>
+                            <option value="school_of_science">School of Science</option>
+                        </select>
+                    </div>
+
+                    <!-- Department Section (Conditionally displayed) -->
+                    <div class="mb-5 relative" x-show="selectedBelongsTo === 'department'">
+                        <label for="department" class="block text-gray-600 text-sm font-medium mb-2">DEPARTMENT</label>
+                        <select id="department" name="department_name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT DEPARTMENT</option>
+                            <option value="computer_science">Computer Science</option>
+                            <option value="mechanical_engineering">Mechanical Engineering</option>
+                            <option value="electrical_engineering">Electrical Engineering</option>
+                            <option value="physics">Physics</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-5 relative" x-show="selectedBelongsTo === 'department'">
+                        <label for="departmentSchool" class="block text-gray-600 text-sm font-medium mb-2">SCHOOL</label>
+                        <select id="departmentSchool" name="department_school_name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT SCHOOL</option>
+                            <option value="computer_science">Computer Science</option>
+                            <option value="mechanical_engineering">Mechanical Engineering</option>
+                            <option value="electrical_engineering">Electrical Engineering</option>
+                            <option value="physics">Physics</option>
+                        </select>
+                    </div>
+
+                    <!-- General Section (Conditionally displayed) -->
+                    <div class="mb-5 relative" x-show="selectedBelongsTo === 'general'">
+                        <label for="generalSection" class="block text-gray-600 text-sm font-medium mb-2">GENERAL SECTION</label>
+                        <select id="generalSection" name="general_section" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800">
+                            <option value="" disabled selected>SELECT GENERAL OPTION</option>
+                            <option value="option1">General Option 1</option>
+                            <option value="option2">General Option 2</option>
+                            <option value="option3">General Option 3</option>
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 mt-8">
+                        <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-md shadow-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                            SUBMIT
+                        </button>
+                        <button type="reset" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                            CLEAR
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer (Optional, but good practice) -->
+    <footer class="bg-gray-800 text-white text-center p-4 mt-8">
+        <p>&copy; 2023 Your University. All rights reserved.</p>
+    </footer>
+
+    <!-- Alpine.js for dropdown functionality -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('addHallForm');
+
+            // Add event listeners for the new radio buttons in the navigation
+            document.querySelectorAll('input[type="radio"][name^="hall_option"], input[type="radio"][name^="school_department_option"], input[type="radio"][name^="employee_option"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log(`Navigation Radio Selected: ${this.name} - ${this.value}`);
+                    // You can add logic here to trigger different views or actions
+                    // based on the selected navigation radio button.
+                    // For example, load different content into the main area.
+                });
+            });
+
+
+            // Handle form submission
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent default form submission
+
+                const formData = new FormData(form);
+                const data = {};
+
+                // Iterate over all form elements to handle multiple selections correctly
+                for (const [key, value] of formData.entries()) {
+                    // For multiple select fields, FormData will return each selected option
+                    // as a separate entry with the same key. We need to collect them into an array.
+                    // This now specifically handles the hidden inputs for 'hall_features[]'
+                    if (key.endsWith('[]')) {
+                        const cleanKey = key.slice(0, -2);
+                        if (!data[cleanKey]) {
+                            data[cleanKey] = [];
+                        }
+                        data[cleanKey].push(value);
+                    } else {
+                        data[key] = value;
+                    }
+                }
+
+                // Also, explicitly get the selectedFeatures from Alpine.js state if the form
+                // data doesn't capture it via hidden inputs (though hidden inputs are better for direct form submission)
+                // This part is more for debugging/verification if hidden inputs aren't used.
+                const alpineData = form.querySelector('[x-data]').__alpine.raw;
+                if (alpineData && alpineData.selectedFeatures) {
+                    data.hall_features = alpineData.selectedFeatures;
+                }
+
+
+                console.log('Form Data Submitted:', data);
+                // Here you would typically send this data to your backend SQL database
+                // using fetch API or XMLHttpRequest.
+                // Example:
+                /*
+                fetch('/api/add-hall', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('Success:', result);
+                    // Display a success message to the user
+                    // For example, using a custom modal instead of alert
+                    alert('Hall added successfully!');
+                    form.reset(); // Clear the form after successful submission
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Display an error message to the user
+                    alert('Error adding hall. Please try again.');
+                });
+                */
+
+                // For demonstration, just show a message and clear the form
+                alert('Form submitted! Check console for data. (No actual backend call)');
+                form.reset();
+            });
+
+            // Handle form clear (reset button functionality is native HTML)
+            // No extra JS needed for reset button as type="reset" handles it.
+        });
+    </script>
+        <script src="layout.js"></script>
+</body>
+</html>

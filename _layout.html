@@ -1,0 +1,65 @@
+<!-- This file contains the shared header and navigation for all your pages -->
+
+<header class="bg-[rgba(0,0,0,0.63)] text-white p-4 shadow-md flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+        <div class="h-[60px] rounded-full overflow-hidden">
+            <img src="download.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/60x60/14555F/FFFFFF?text=PU'; this.onerror=null;">
+        </div>
+        <h1 class="text-xl font-semibold">PONDICHERRY UNIVERSITY</h1>
+    </div>
+    <div class="flex items-center space-x-4">
+        <span class="text-lg font-medium">ADMIN</span>
+        <span class="text-lg">|</span>
+        <a href="#" class="text-lg font-medium hover:underline flex items-center space-x-1">
+            <span>LOGOUT</span>
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+    </div>
+</header>
+
+<nav class="bg-[rgba(255,255,255,0.11)] text-white shadow-lg py-1">
+    <div class="container mx-auto flex justify-center space-x-8 lg:space-x-12 relative" x-data>
+        <!-- Nav Item: DASHBOARD -->
+        <div class="relative group">
+            <a href="dashboard.html" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md">
+                <span>DASHBOARD</span>
+            </a>
+        </div>
+
+        <!-- Nav Item: HALL DETAILS -->
+        <div class="relative group" x-data="{ open: false }" @click.away="open = false">
+            <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                <span>HALL DETAILS</span>
+                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
+            </button>
+            <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                <a href="addHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Hall</a>
+                <a href="manageHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage Halls</a>
+            </div>
+        </div>
+
+        <!-- Nav Item: SCHOOL/DEPARTMENT -->
+        <div class="relative group" x-data="{ open: false }" @click.away="open = false">
+            <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                <span>SCHOOL/DEPARTMENT</span>
+                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
+            </button>
+            <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                <a href="addSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add School/Department</a>
+                <a href="manageSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage School/Department</a>
+            </div>
+        </div>
+
+        <!-- Nav Item: EMPLOYEE DETAILS -->
+        <div class="relative group" x-data="{ open: false }" @click.away="open = false">
+            <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                <span>EMPLOYEE DETAILS</span>
+                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
+            </button>
+            <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                <a href="employee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Employee</a>
+                <a href="manageEmployee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">View Employees</a>
+            </div>
+        </div>
+    </div>
+</nav>

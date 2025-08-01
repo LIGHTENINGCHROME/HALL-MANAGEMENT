@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add School or Department</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom styles for Montserrat font and scrollable dropdowns */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            /* Applying gradient directly to body */
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed; /* Ensures gradient covers full viewport even on scroll */
+        }
+        /* Custom scrollbar for dropdowns */
+        .scrollable-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-track {
+            background: #2d3748; /* Dark blue-gray */
+            border-radius: 10px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-thumb {
+            background: #4a5568; /* Slightly lighter dark blue-gray */
+            border-radius: 10px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #6b7280; /* Even lighter */
+            }
+        /* Hide default arrow for select elements that are not multiple */
+        select:not([multiple]) {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; /* Make space for the custom arrow */
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-[rgba(0,0,0,0.63)] text-white p-4 shadow-md flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+            <div class="h-[60px] rounded-full overflow-hidden">
+                <img src="https://placehold.co/60x60/000000/FFFFFF?text=Logo" alt="Logo" class="w-full h-full object-contain">
+            </div>
+            <h1 class="text-xl font-semibold">PONDICHERRY UNIVERSITY</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-lg font-medium">ADMIN</span>
+            <span class="text-lg">|</span>
+            <a href="#" class="text-lg font-medium hover:underline flex items-center space-x-1">
+                <span>LOGOUT</span>
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="bg-[rgba(255,255,255,0.11)] text-white shadow-lg py-1">
+        <div class="container mx-auto flex justify-center space-x-8 lg:space-x-12 relative">
+            <!-- Nav Item: DASHBOARD -->
+            <div class="relative group">
+                <a href="#" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md">
+                    <span>DASHBOARD</span>
+                </a>
+            </div>
+
+            <!-- Nav Item: HALL DETAILS -->
+            <div class="relative group" x-data="{ open: false }" @click.away="open = false">
+                <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                    <span>HALL DETAILS</span>
+                    <i class="fas fa-chevron-down text-sm group-hover:rotate-180 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10 max-h-60 overflow-y-auto scrollable-dropdown">
+                    <a href="../addHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Hall</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage Halls</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Hall Bookings</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Hall Reports</a>
+                </div>
+            </div>
+
+            <!-- Nav Item: SCHOOL/DEPARTMENT -->
+            <div class="relative group" x-data="{ open: false }" @click.away="open = false">
+                <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                    <span>SCHOOL/DEPARTMENT</span>
+                    <i class="fas fa-chevron-down text-sm group-hover:rotate-180 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-10 max-h-60 overflow-y-auto scrollable-dropdown">
+                    <a href="../addSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add School/Department</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage School/Department</a>
+                </div>
+            </div>
+
+            <!-- Nav Item: EMPLOYEE DETAILS -->
+            <div class="relative group" x-data="{ open: false }" @click.away="open = false">
+                <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                    <span>EMPLOYEE DETAILS</span>
+                    <i class="fas fa-chevron-down text-sm group-hover:rotate-180 transition-transform duration-200" :class="{ 'rotate-180': open }"></i>
+                </button>
+                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                    class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10 max-h-60 overflow-y-auto scrollable-dropdown">
+                    <a href="../employee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Employee</a>
+                    <a href="#" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">View Employees</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow p-6 flex items-center justify-center">
+        <!-- Consolidated x-data to this main container -->
+        <div id="mainAlpineContainer" class="container mx-auto bg-[rgba(0,0,0,0.15)] p-8 rounded-lg shadow-xl max-w-2xl"
+             x-data="{
+                 type: 'school',
+                 selectedSchoolForDept: '',
+                 openSchoolSelect: false, // For department's school dropdown
+                 searchTermSchoolSelect: '', // For department's school dropdown search
+                 schoolOptionsForDept: [ // Moved from nested x-data
+                    { value: 'school_of_engineering', label: 'School of Engineering' },
+                    { value: 'school_of_arts', label: 'School of Arts' },
+                    { value: 'school_of_science', label: 'School of Science' },
+                    { value: 'school_of_management', label: 'School of Management' },
+                    { value: 'school_of_law', label: 'School of Law' },
+                    { value: 'school_of_medicine', label: 'School of Medicine' },
+                    { value: 'school_of_humanities', label: 'School of Humanities' },
+                    { value: 'school_of_social_sciences', label: 'School of Social Sciences' },
+                    { value: 'school_of_environmental_studies', label: 'School of Environmental Studies' },
+                    { value: 'school_of_physical_sciences', label: 'School of Physical Sciences' },
+                    { value: 'school_of_chemical_sciences', label: 'School of Chemical Sciences' },
+                    { value: 'school_of_life_sciences', label: 'School of Life Sciences' },
+                    { value: 'school_of_computer_science', label: 'School of Computer Science' },
+                    { value: 'school_of_education', label: 'School of Education' },
+                    { value: 'school_of_pharmacy', label: 'School of Pharmacy' },
+                    { value: 'school_of_nursing', label: 'School of Nursing' },
+                    { value: 'school_of_architecture', label: 'School of Architecture' },
+                    { value: 'school_of_design', label: 'School of Design' },
+                    { value: 'school_of_journalism', label: 'School of Journalism' },
+                    { value: 'school_of_public_health', label: 'School of Public Health' },
+                    { value: 'school_of_dentistry', label: 'School of Dentistry' },
+                    { value: 'school_of_veterinary_medicine', label: 'School of Veterinary Medicine' },
+                    { value: 'school_of_agriculture', label: 'School of Agriculture' },
+                    { value: 'school_of_fisheries', label: 'School of Fisheries' },
+                    { value: 'school_of_oceanography', label: 'School of Oceanography' },
+                    { value: 'school_of_earth_sciences', label: 'School of Earth Sciences' },
+                    { value: 'school_of_space_studies', label: 'School of Space Studies' },
+                    { value: 'school_of_robotics', label: 'School of Robotics' },
+                    { value: 'school_of_artificial_intelligence', label: 'School of Artificial Intelligence' },
+                    { value: 'school_of_cyber_security', label: 'School of Cyber Security' },
+                    { value: 'school_of_data_science', label: 'School of Data Science' },
+                    { value: 'school_of_biotechnology', label: 'School of Biotechnology' },
+                    { value: 'school_of_nanotechnology', label: 'School of Nanotechnology' },
+                    { value: 'school_of_renewable_energy', label: 'School of Renewable Energy' },
+                    { value: 'school_of_urban_planning', label: 'School of Urban Planning' },
+                    { value: 'school_of_tourism', label: 'School of Tourism' },
+                    { value: 'school_of_hospitality', label: 'School of Hospitality' },
+                    { value: 'school_of_culinary_arts', label: 'School of Culinary Arts' },
+                    { value: 'school_of_fashion_design', label: 'School of Fashion Design' },
+                    { value: 'school_of_music', label: 'School of Music' },
+                    { value: 'school_of_drama', label: 'School of Drama' },
+                    { value: 'school_of_fine_arts', label: 'School of Fine Arts' },
+                    { value: 'school_of_philosophy', label: 'School of Philosophy' },
+                    { value: 'school_of_theology', label: 'School of Theology' },
+                    { value: 'school_of_religious_studies', label: 'School of Religious Studies' },
+                    { value: 'school_of_linguistics', label: 'School of Linguistics' },
+                    { value: 'school_of_literature', label: 'School of Literature' },
+                    { value: 'school_of_history', label: 'School of History' },
+                    { value: 'school_of_geography', label: 'School of Geography' },
+                    { value: 'school_of_psychology', label: 'School of Psychology' },
+                    { value: 'school_of_sociology', label: 'School of Sociology' },
+                    { value: 'school_of_political_science', label: 'School of Political Science' },
+                    { value: 'school_of_international_relations', label: 'School of International Relations' },
+                    { value: 'school_of_economics', label: 'School of Economics' },
+                    { value: 'school_of_public_administration', label: 'School of Public Administration' },
+                    { value: 'school_of_social_work', label: 'School of Social Work' },
+                    { value: 'school_of_library_science', label: 'School of Library Science' },
+                    { value: 'school_of_archaeology', label: 'School of Archaeology' },
+                    { value: 'school_of_museology', label: 'School of Museology' }
+                 ],
+                 async submitForm() {
+                     const form = this.$el; // Access the form element directly via Alpine's $el
+                     const formData = new FormData(form);
+                     const data = {};
+
+                     const type = this.type; // Access type directly from Alpine state
+
+                     // Build the payload based on the selected type
+                     if (type === 'school') {
+                         data.school_name = formData.get('school_name');
+                         data.incharge_name = formData.get('incharge_name');
+                         data.incharge_contact_number = formData.get('incharge_contact_number');
+                         data.incharge_email = formData.get('incharge_email');
+                         data.incharge_intercom = formData.get('incharge_intercom');
+                         data.incharge_status = formData.get('incharge_status');
+                     } else if (type === 'department') {
+                         data.department_name = formData.get('department_name');
+                         data.school_name = this.selectedSchoolForDept; // Access from Alpine state
+                         data.incharge_name = formData.get('incharge_name');
+                         data.incharge_contact_number = formData.get('incharge_contact_number');
+                         data.incharge_email = formData.get('incharge_email');
+                         data.incharge_intercom = formData.get('incharge_intercom');
+                         data.incharge_status = formData.get('incharge_status');
+                     }
+
+                     console.log('Form Data Submitted:', data);
+
+                     try {
+                         const response = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/schools/create', {
+                             method: 'POST',
+                             headers: {
+                                 'Content-Type': 'application/json'
+                             },
+                             body: JSON.stringify(data)
+                         });
+
+                         // Log the status and status text for debugging network issues
+                         console.log('Response Status:', response.status, response.statusText);
+
+                         let result;
+                         const contentType = response.headers.get('Content-Type');
+
+                         if (contentType && contentType.includes('application/json')) {
+                             result = await response.json();
+                         } else {
+                             // If not JSON, read as text and parse if it's a JSON string
+                             const text = await response.text();
+                             try {
+                                 result = JSON.parse(text);
+                             } catch (e) {
+                                 // If it's not JSON, just use the text as the result
+                                 result = { message: text || 'Non-JSON response from server.' };
+                             }
+                         }
+
+
+                         if (response.ok) {
+                             console.log('Success:', result);
+                             showModal('Entry added successfully!', result);
+                             form.reset(); // Clear the form after successful submission
+                             // Reset Alpine.js state for a clean form after submission
+                             this.type = 'school'; // Reset to default tab
+                             this.selectedSchoolForDept = ''; // Clear selected school for department
+                             this.openSchoolSelect = false; // Close dropdown
+                             this.searchTermSchoolSelect = ''; // Clear search term
+                         } else {
+                             console.error('Error:', result);
+                             // Provide more specific error message including HTTP status
+                             showModal(`Error adding entry: ${response.status} ${response.statusText} - ${(result.message || 'Unknown error')}`, result);
+                         }
+                     } catch (error) {
+                         console.error('Network Error:', error);
+                         showModal('Network error. Please try again. Details: ' + error.message);
+                     }
+                 }
+             }">
+            <h2 class="text-3xl font-bold text-center text-white mb-8">Add School or Department</h2>
+
+            <div class="flex bg-white rounded-md overflow-hidden shadow-md mb-8">
+                <button @click="type = 'school'; selectedSchoolForDept = ''; openSchoolSelect = false; searchTermSchoolSelect = ''" :class="{'bg-blue-600 text-white': type === 'school', 'bg-white text-blue-600 hover:bg-blue-50': type !== 'school'}" class="flex-1 py-3 px-6 text-lg font-semibold transition-all duration-200 focus:outline-none rounded-l-md">
+                    School
+                </button>
+                <button @click="type = 'department'; selectedSchoolForDept = ''; openSchoolSelect = false; searchTermSchoolSelect = ''" :class="{'bg-blue-600 text-white': type === 'department', 'bg-white text-blue-600 hover:bg-blue-50': type !== 'department'}" class="flex-1 py-3 px-6 text-lg font-semibold transition-all duration-200 focus:outline-none rounded-r-md">
+                    Department
+                </button>
+            </div>
+
+            <form id="addSchoolDeptForm" class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200" x-on:submit.prevent="submitForm()">
+
+                <div x-show="type === 'school'">
+                    <div class="mb-5">
+                        <label for="schoolName" class="block text-gray-600 text-sm font-medium mb-2">School Name:</label>
+                        <input type="text" id="schoolName" name="school_name" placeholder="Enter School Name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="deanName" class="block text-gray-600 text-sm font-medium mb-2">Dean Name:</label>
+                        <input type="text" id="deanName" name="incharge_name" placeholder="Enter Dean Name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="deanContactNumber" class="block text-gray-600 text-sm font-medium mb-2">Dean Contact Number:</label>
+                        <input type="text" id="deanContactNumber" name="incharge_contact_number" placeholder="Enter Dean Contact Number" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="deanEmail" class="block text-gray-600 text-sm font-medium mb-2">Dean Email:</label>
+                        <input type="email" id="deanEmail" name="incharge_email" placeholder="Enter Dean Email" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="deanIntercom" class="block text-gray-600 text-sm font-medium mb-2">Dean Intercom:</label>
+                        <input type="text" id="deanIntercom" name="incharge_intercom" placeholder="Enter Dean Intercom" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5 relative">
+                        <label for="deanStatus" class="block text-gray-600 text-sm font-medium mb-2">Dean Status:</label>
+                        <select id="deanStatus" name="incharge_status" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800" x-bind:required="type === 'school'">
+                            <option value="" disabled selected>All Dean Status</option>
+                            <option value="PERMANENT">Permanent</option>
+                            <option value="INCHARGE">Incharge</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div x-show="type === 'department'">
+                    <div class="mb-5 relative">
+                        <label for="departmentSchoolSearch" class="block text-gray-600 text-sm font-medium mb-2">School Name:</label>
+                        <div class="relative">
+                            <button type="button" @click="openSchoolSelect = !openSchoolSelect; searchTermSchoolSelect = ''" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800 text-left flex justify-between items-center">
+                                <span class="truncate" x-text="selectedSchoolForDept ? schoolOptionsForDept.find(o => o.value === selectedSchoolForDept)?.label : 'Select School'"></span>
+                                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': openSchoolSelect }"></i>
+                            </button>
+                            <div x-show="openSchoolSelect" @click.away="openSchoolSelect = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                class="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto scrollable-dropdown">
+                                <input type="text" x-model="searchTermSchoolSelect" placeholder="Search school..." class="sticky top-0 w-full p-2 border-b border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <template x-for="option in schoolOptionsForDept.filter(o => o.label.toLowerCase().includes(searchTermSchoolSelect.toLowerCase()))" :key="option.value">
+                                    <div @click="selectedSchoolForDept = option.value; openSchoolSelect = false" class="px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer" :class="{'bg-blue-100': selectedSchoolForDept === option.value}" x-text="option.label"></div>
+                                </template>
+                            </div>
+                        </div>
+                        <input type="hidden" name="department_school_name" :value="selectedSchoolForDept">
+                    </div>
+
+                    <div class="mb-5">
+                        <label for="departmentName" class="block text-gray-600 text-sm font-medium mb-2">Department Name:</label>
+                        <input type="text" id="departmentName" name="department_name" placeholder="Enter Department Name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="inchargeName" class="block text-gray-600 text-sm font-medium mb-2">Incharge Name:</label>
+                        <input type="text" id="inchargeName" name="incharge_name" placeholder="Enter HoD name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="hodContactNumber" class="block text-gray-600 text-sm font-medium mb-2">HoD's Contact Number:</label>
+                        <input type="text" id="hodContactNumber" name="incharge_contact_number" placeholder="Enter HoD Contact Number" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="hodEmail" class="block text-gray-600 text-sm font-medium mb-2">HoD's Email:</label>
+                        <input type="email" id="hodEmail" name="incharge_email" placeholder="Enter HoD Email" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5">
+                        <label for="hodIntercom" class="block text-gray-600 text-sm font-medium mb-2">HoD's Intercom:</label>
+                        <input type="text" id="hodIntercom" name="incharge_intercom" placeholder="Enter HoD Intercom" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                    </div>
+                    <div class="mb-5 relative">
+                        <label for="hodStatus" class="block text-gray-600 text-sm font-medium mb-2">HoD Status:</label>
+                        <select id="hodStatus" name="incharge_status" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800" x-bind:required="type === 'department'">
+                            <option value="" disabled selected>All HoD Status</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="INACTIVE">Inactive</option>
+                            <option value="ON_LEAVE">On Leave</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-md shadow-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                        SUBMIT
+                    </button>
+                    <button type="reset" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                        CLEAR
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-4 mt-8">
+        <p>&copy; 2023 Your University. All rights reserved.</p>
+    </footer>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg font-semibold text-gray-800"></p>
+            <pre id="modalResponseDetails" class="text-sm text-gray-600 text-left whitespace-pre-wrap mt-2"></pre>
+            <button id="modalCloseButton" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">OK</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('myModal');
+            const modalMessage = document.getElementById('modalMessage');
+            const modalResponseDetails = document.getElementById('modalResponseDetails');
+            const closeButtons = document.querySelectorAll('.close-button, #modalCloseButton');
+
+            // Make showModal globally accessible for Alpine.js
+            window.showModal = function(message, details = null) {
+                modalMessage.textContent = message;
+                modalResponseDetails.textContent = '';
+
+                if (details) {
+                    modalResponseDetails.textContent = JSON.stringify(details, null, 2);
+                }
+                modal.style.display = 'flex';
+            };
+
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    modal.style.display = 'none';
+                });
+            });
+
+            window.addEventListener('click', function(event) {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

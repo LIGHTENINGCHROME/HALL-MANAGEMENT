@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pondicherry University Login</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the body, login card, inputs, and buttons */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #E0F2F7; /* Light blue background */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Full viewport height */
+            margin: 0;
+            padding: 20px; /* Padding for mobile responsiveness */
+            box-sizing: border-box;
+        }
+        .login-card {
+            background-color: #FFFFFF;
+            border-radius: 1.5rem; /* Rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Soft shadow */
+            padding: 2.5rem; /* Spacious padding */
+            width: 100%;
+            max-width: 400px; /* Max width for desktop */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 2rem; /* Space between logo and card */
+        }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.25rem; /* Space between input fields */
+            border: 2px solid #0066ff; /* Blue border */
+            border-radius: 0.75rem; /* Rounded input fields */
+            font-size: 1rem;
+            color: #374151; /* Dark text color */
+            outline: none; /* Remove default outline */
+            transition: border-color 0.2s; /* Smooth transition for border color */
+            text-align: center; /* Center align text in input fields */
+        }
+        .input-field:focus {
+            border-color: #3B82F6; /* Blue border on focus */
+        }
+        .login-button {
+            width: 100%;
+            padding: 0.85rem 1.5rem; /* Button size */
+            background-color: #3B82F6; /* Blue button color */
+            color: #FFFFFF; /* White text */
+            font-weight: 600; /* Semi-bold text */
+            border-radius: 0.75rem; /* Rounded button */
+            cursor: pointer; /* Pointer cursor on hover */
+            transition: background-color 0.2s; /* Smooth transition for background */
+            border: none; /* Remove default border */
+            font-size: 1rem;
+        }
+        .login-button:hover {
+            background-color: #2563EB; /* Darker blue on hover */
+        }
+        .forgot-password {
+            color: #3B82F6; /* Blue text */
+            font-size: 0.9rem;
+            margin-top: 1.5rem; /* Space above link */
+            text-decoration: none; /* Remove underline */
+            font-weight: 500; /* Medium weight */
+            transition: color 0.2s; /* Smooth transition for color */
+        }
+        .forgot-password:hover {
+            color: #2563EB; /* Darker blue on hover */
+            text-decoration: underline; /* Underline on hover */
+        }
+        .logo {
+            max-width: 150px; /* Adjust logo size */
+            height: auto;
+            margin-bottom: 1rem; /* Space below the logo */
+        }
+        .login-title {
+            font-size: 1.75rem; /* Larger title */
+            font-weight: 700; /* Bold title */
+            color: #2563EB; /* Dark blue text */
+            margin-bottom: 2rem; /* Space below title */
+            text-transform: uppercase; /* Uppercase text */
+        }
+        /* Message styling for success and error feedback */
+        .message {
+            margin-top: 1rem;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            width: 100%;
+            /* Hide by default, shown by JS */
+            display: none;
+        }
+        .message.success {
+            background-color: #D1FAE5; /* Light green */
+            color: #065F46; /* Dark green text */
+            border: 1px solid #34D399; /* Green border */
+        }
+        .message.error {
+            background-color: #FEE2E2; /* Light red */
+            color: #991B1B; /* Dark red text */
+            border: 1px solid #F87171; /* Red border */
+        }
+    </style>
+</head>
+<body>
+    <!-- Pondicherry University Logo -->
+    <img src="download.png" alt="Pondicherry University Logo" class="logo">
+
+    <!-- Login Card Container -->
+    <div class="login-card">
+        <h2 class="login-title">Login</h2>
+
+        <!-- Email Input Field -->
+        <input type="email" id="email" placeholder="EMAIL" class="input-field">
+
+        <!-- Password Input Field -->
+        <input type="password" id="password" placeholder="PASSWORD" class="input-field">
+
+        <!-- Login Button -->
+        <button id="loginBtn" class="login-button">Login</button>
+
+        <!-- Message Display Area (for success/error feedback) -->
+        <div id="messageArea" class="message"></div>
+
+        <!-- Forgot Password Link -->
+        <a href="#" class="forgot-password">FORGOT PASSWORD ?</a>
+    </div>
+
+    <script>
+        /*
+         * IMPORTANT: Troubleshooting "Failed to fetch" Error
+         *
+         * The error "TypeError: Failed to fetch" in the browser console,
+         * especially when your `curl` command to the same URL works,
+         * is almost always caused by a **CORS (Cross-Origin Resource Sharing) policy**
+         * blocking the request in the browser.
+         *
+         * This is a browser security mechanism. Your frontend (e.g., file:// or http://localhost:port)
+         * is on a different "origin" than your backend API (https://hall-management.nirmaljyotib.workers.dev/).
+         * Browsers block cross-origin requests by default unless the *server* explicitly allows them.
+         *
+         * The frontend code in this HTML file is correctly attempting the fetch request.
+         * No further changes are needed in this frontend code to resolve the "Failed to fetch" error.
+         *
+         * SOLUTION:
+         * You MUST configure your Cloudflare Worker backend to send the correct CORS headers
+         * in its responses (for both OPTIONS preflight requests and actual GET/POST responses).
+         *
+         * Refer to the Cloudflare Worker CORS configuration example provided previously.
+         * Ensure your Worker's JavaScript code includes headers like:
+         * 'Access-Control-Allow-Origin': 'YOUR_FRONTEND_ORIGIN' (e.g., 'http://localhost:3000' or '*' for testing)
+         * 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+         * 'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+         * 'Access-Control-Allow-Credentials': 'true' (if using cookies/sessions)
+         *
+         * The fix is NOT in this HTML file, but on your backend server.
+         */
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get references to DOM elements
+            const loginBtn = document.getElementById('loginBtn');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const messageArea = document.getElementById('messageArea');
+
+            // Define your API endpoint for login and the dashboard URL
+            // Using POST is the secure and recommended method for login.
+            const LOGIN_API_URL = 'https://hall-management.nirmaljyotib.workers.dev/auth/login';
+            const DASHBOARD_URL = 'dashboard.html'; // Path to your dashboard page
+
+            /**
+             * Displays a message in the message area.
+             * @param {string} msg - The message text to display.
+             * @param {'success'|'error'} type - The type of message ('success' or 'error') for styling.
+             */
+            function showMessage(msg, type) {
+                messageArea.textContent = msg;
+                messageArea.className = `message ${type}`; // Apply dynamic class for styling
+                messageArea.style.display = 'block'; // Make the message area visible
+            }
+
+            /**
+             * Hides the message area and clears its content.
+             */
+            function hideMessage() {
+                messageArea.style.display = 'none'; // Hide the message area
+                messageArea.textContent = '';
+                messageArea.className = 'message'; // Reset classes
+            }
+
+            // Add event listener to the login button
+            loginBtn.addEventListener('click', async function() {
+                const email = emailInput.value.trim(); // Get email and trim whitespace
+                const password = passwordInput.value.trim(); // Get password and trim whitespace
+
+                hideMessage(); // Clear any previous messages
+
+                // Basic client-side validation: ensure fields are not empty
+                if (!email || !password) {
+                    showMessage('Please enter both email and password.', 'error');
+                    return; // Stop execution if validation fails
+                }
+
+                console.log('Attempting login with:', { email, password });
+
+                try {
+                    // Send a POST request to the login API (securely recommended)
+                    const response = await fetch(LOGIN_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json' // Indicate JSON body
+                        },
+                        body: JSON.stringify({ email, password }) // Convert data to JSON string
+                    });
+
+                    // Parse the JSON response from the server
+                    // This will throw an error if the response is not valid JSON,
+                    // which will be caught by the catch block.
+                    const data = await response.json();
+
+                    console.log('API Response Status:', response.status);
+                    console.log('API Response Data:', data);
+
+                    // Check if the HTTP status code is in the 2xx range (success)
+                    // And check if the 'token' property exists in the response data
+                    if (response.ok && data.token) { // Modified condition: check for response.ok AND data.token
+                        showMessage(data.message || 'Login successful!', 'success'); // Display success message
+                        localStorage.setItem('authToken', data.token); // Store token in localStorage
+                        console.log('Auth Token received and stored.');
+                        
+                        // Redirect to the dashboard after a short delay for user to see message
+                        console.log('Login successful, redirecting to dashboard...');
+                        setTimeout(() => {
+                            window.location.replace(DASHBOARD_URL); // Using replace for cleaner history
+                        }, 1000); // 1 second delay
+                    } else {
+                        // This block will be hit if:
+                        // 1. response.ok is false (e.g., 401, 500)
+                        // 2. response.ok is true, but data.token is not present (e.g., custom backend error without token)
+                        console.log('Login failed: Invalid response or missing token.');
+                        showMessage(data.message || `Error: ${response.statusText || 'Unknown authentication error'}`, 'error');
+                        console.error('Server error response or missing token:', data);
+                    }
+                } catch (error) {
+                    // This catch block will be hit for network errors (e.g., server unreachable, DNS issues, CORS issues),
+                    // or if response.json() fails because the response body is not valid JSON.
+                    console.error('Network or parsing error during login:', error);
+                    // Display a user-friendly message for connection issues.
+                    // The "Failed to fetch" error specifically indicates a network problem or a browser security block (like CORS).
+                    showMessage('Could not connect to the server. This is often due to a CORS issue. Please ensure your backend (Cloudflare Worker) is configured to allow requests from your frontend\'s origin.', 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

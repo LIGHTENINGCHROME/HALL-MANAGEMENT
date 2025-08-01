@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add School or Department</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        /* Custom styles for Montserrat font and scrollable dropdowns */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        .scrollable-dropdown::-webkit-scrollbar { width: 8px; }
+        .scrollable-dropdown::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .scrollable-dropdown::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .scrollable-dropdown::-webkit-scrollbar-thumb:hover { background: #555; }
+        select:not([multiple]) {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+     <!-- Placeholders for centralized header and navigation -->
+  <div id="header-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+    <main class="flex-grow p-6 flex items-center justify-center">
+        <div class="container mx-auto max-w-2xl" x-data="schoolDeptForm">
+            <div class="bg-[rgba(0,0,0,0.15)] p-8 rounded-lg shadow-xl">
+                <h2 class="text-3xl font-bold text-center text-white mb-8">Add School or Department</h2>
+
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <div class="flex bg-gray-100 rounded-md overflow-hidden shadow-sm mb-8">
+                        <button @click="type = 'school'" :class="{'bg-indigo-600 text-white': type === 'school', 'bg-gray-100 text-gray-600 hover:bg-gray-200': type !== 'school'}" class="flex-1 py-3 px-6 text-lg font-semibold transition-all duration-200 focus:outline-none rounded-l-md">School</button>
+                        <button @click="type = 'department'" :class="{'bg-indigo-600 text-white': type === 'department', 'bg-gray-100 text-gray-600 hover:bg-gray-200': type !== 'department'}" class="flex-1 py-3 px-6 text-lg font-semibold transition-all duration-200 focus:outline-none rounded-r-md">Department</button>
+                    </div>
+
+                    <form x-ref="schoolDeptForm" @submit.prevent="submitForm()" novalidate>
+                        <!-- School Form -->
+                        <div x-show="type === 'school'" x-transition class="space-y-6">
+                            <div><label for="schoolName" class="block text-gray-600 text-sm font-medium mb-2">School Name:</label><input type="text" id="schoolName" name="school_name" placeholder="Enter School Name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'school'"></div>
+                            <div><label for="deanName" class="block text-gray-600 text-sm font-medium mb-2">Dean Name:</label><input type="text" id="deanName" name="incharge_name_school" placeholder="Enter Dean Name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'school'"></div>
+                            <div><label for="deanContactNumber" class="block text-gray-600 text-sm font-medium mb-2">Dean Contact Number:</label><input type="text" id="deanContactNumber" x-model="deanContactNumber" placeholder="e.g., +919876543210 or 9876543210" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'school'"><p class="text-red-500 text-xs mt-1" x-show="deanContactNumber && !isValidPhoneNumber(deanContactNumber)">Must be 10 digits, or 13 digits with +91 prefix.</p></div>
+                            <div><label for="deanEmail" class="block text-gray-600 text-sm font-medium mb-2">Dean Email:</label><input type="email" id="deanEmail" name="incharge_email_school" placeholder="Enter Dean Email" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'school'" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"></div>
+                            <div><label for="deanIntercom" class="block text-gray-600 text-sm font-medium mb-2">Dean Intercom:</label><input type="text" id="deanIntercom" name="incharge_intercom_school" x-model="deanIntercom" placeholder="Enter Dean Intercom" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'school'"></div>
+                            <div>
+                                <label class="block text-gray-600 text-sm font-medium mb-2">Dean Status:</label>
+                                <div class="flex items-center space-x-2 bg-gray-100 rounded-md p-1">
+                                    <button type="button" @click="deanStatus = 'PERMANENT'" :class="{'bg-white text-indigo-600 shadow': deanStatus === 'PERMANENT', 'text-gray-500': deanStatus !== 'PERMANENT'}" class="flex-1 py-2 px-4 rounded-md transition-colors duration-200 text-sm font-semibold">Permanent</button>
+                                    <button type="button" @click="deanStatus = 'INCHARGE'" :class="{'bg-white text-indigo-600 shadow': deanStatus === 'INCHARGE', 'text-gray-500': deanStatus !== 'INCHARGE'}" class="flex-1 py-2 px-4 rounded-md transition-colors duration-200 text-sm font-semibold">Incharge</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department Form -->
+                        <div x-show="type === 'department'" x-transition class="space-y-6">
+                            <div class="relative" @click.away="modals.schoolOpen = false">
+                                <label class="block text-gray-600 text-sm font-medium mb-2">School Name:</label>
+                                <input type="text" x-model="searchTerms.school" @focus="modals.schoolOpen = true" @input.debounce.300ms="selectedSchoolId = null" placeholder="Type to search for a school" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'department' && !selectedSchoolId">
+                                <div x-show="modals.schoolOpen" class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto scrollable-dropdown">
+                                    <template x-for="option in filteredSchools" :key="option.value"><div @click="selectSchool(option.value)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="option.label"></div></template>
+                                </div>
+                            </div>
+                            <div><label for="departmentName" class="block text-gray-600 text-sm font-medium mb-2">Department Name:</label><input type="text" id="departmentName" name="department_name" placeholder="Enter Department Name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'department'"></div>
+                            <div><label for="hodName" class="block text-gray-600 text-sm font-medium mb-2">HoD Name:</label><input type="text" id="hodName" name="incharge_name_dept" placeholder="Enter HoD name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'department'"></div>
+                            <div><label for="hodContactNumber" class="block text-gray-600 text-sm font-medium mb-2">HoD's Contact Number:</label><input type="text" id="hodContactNumber" name="incharge_contact_number_dept" x-model="hodContactNumber" placeholder="e.g., +919876543210 or 9876543210" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'department'"><p class="text-red-500 text-xs mt-1" x-show="hodContactNumber && !isValidPhoneNumber(hodContactNumber)">Must be 10 digits, or 13 digits with +91 prefix.</p></div>
+                            <div><label for="hodEmail" class="block text-gray-600 text-sm font-medium mb-2">HoD's Email:</label><input type="email" id="hodEmail" name="incharge_email_dept" placeholder="Enter HoD Email" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'department'" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"></div>
+                            <div><label for="hodIntercom" class="block text-gray-600 text-sm font-medium mb-2">HoD's Intercom:</label><input type="text" id="hodIntercom" name="incharge_intercom_dept" x-model="hodIntercom" placeholder="Enter HoD Intercom" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-800" :required="type === 'department'"></div>
+                            <div>
+                                <label class="block text-gray-600 text-sm font-medium mb-2">HoD Status:</label>
+                                <div class="flex items-center space-x-2 bg-gray-100 rounded-md p-1">
+                                    <button type="button" @click="hodStatus = 'PERMANENT'" :class="{'bg-white text-indigo-600 shadow': hodStatus === 'PERMANENT', 'text-gray-500': hodStatus !== 'PERMANENT'}" class="flex-1 py-2 px-4 rounded-md transition-colors duration-200 text-sm font-semibold">Permanent</button>
+                                    <button type="button" @click="hodStatus = 'INCHARGE'" :class="{'bg-white text-indigo-600 shadow': hodStatus === 'INCHARGE', 'text-gray-500': hodStatus !== 'INCHARGE'}" class="flex-1 py-2 px-4 rounded-md transition-colors duration-200 text-sm font-semibold">Incharge</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-4 mt-8 pt-6 border-t">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">SUBMIT</button>
+                            <button type="reset" @click="resetForm()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">CLEAR</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+    
+    <div x-data x-show="$store.modal.show" @click.away="$store.modal.close()" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <div x-show="$store.modal.isSuccess" class="text-5xl mb-4 text-green-500"><i class="fas fa-check-circle"></i></div>
+            <div x-show="!$store.modal.isSuccess" class="text-5xl mb-4 text-red-500"><i class="fas fa-times-circle"></i></div>
+            <p class="text-lg font-semibold text-gray-800" x-text="$store.modal.message"></p>
+            <button @click="$store.modal.close()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md">OK</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('modal', {
+                show: false,
+                isSuccess: false,
+                message: '',
+                open(isSuccess, message) {
+                    this.isSuccess = isSuccess;
+                    this.message = message;
+                    this.show = true;
+                },
+                close() {
+                    this.show = false;
+                }
+            });
+
+            Alpine.data('schoolDeptForm', () => ({
+                type: 'school',
+                selectedSchoolId: '',
+                schoolOptions: [],
+                modals: { schoolOpen: false },
+                searchTerms: { school: '' },
+                deanContactNumber: '',
+                deanIntercom: '',
+                hodContactNumber: '',
+                hodIntercom: '',
+                deanStatus: 'PERMANENT',
+                hodStatus: 'PERMANENT',
+
+                init() {
+                    this.fetchSchools();
+                    this.$watch('type', () => this.resetForm());
+                },
+                
+                get filteredSchools() {
+                    if (!this.searchTerms.school) return this.schoolOptions;
+                    return this.schoolOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.school.toLowerCase()));
+                },
+
+                selectSchool(schoolId) {
+                    this.selectedSchoolId = schoolId;
+                    const school = this.schoolOptions.find(s => s.value === schoolId);
+                    if (school) this.searchTerms.school = school.label;
+                    this.modals.schoolOpen = false;
+                },
+
+                isValidPhoneNumber(number) {
+                    if (!number) return true; 
+                    const pattern = /^\+?91\d{10}$|^[6-9]\d{9}$/;
+                    if (!pattern.test(number)) return false;
+                    if (number.startsWith('+91')) return number.length === 13;
+                    return number.length === 10;
+                },
+
+                async fetchSchools() {
+                    try {
+                        const response = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools');
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        this.schoolOptions = data.map(school => ({ value: school.unique_id, label: school.school_name }));
+                    } catch (error) {
+                        console.error('Error fetching schools:', error);
+                        Alpine.store('modal').open(false, 'Failed to load school list.');
+                    }
+                },
+
+                resetForm() {
+                    this.$refs.schoolDeptForm.reset();
+                    this.selectedSchoolId = '';
+                    this.searchTerms.school = '';
+                    this.deanContactNumber = '';
+                    this.deanIntercom = '';
+                    this.hodContactNumber = '';
+                    this.hodIntercom = '';
+                    this.deanStatus = 'PERMANENT';
+                    this.hodStatus = 'PERMANENT';
+                },
+
+                async submitForm() {
+                    const form = this.$refs.schoolDeptForm;
+                    if (!form.checkValidity() || (this.type === 'department' && !this.selectedSchoolId)) {
+                        if (this.type === 'department' && !this.selectedSchoolId) Alpine.store('modal').open(false, 'Please select a valid school for the department.');
+                        form.reportValidity();
+                        return;
+                    }
+
+                    if ((this.type === 'school' && !this.isValidPhoneNumber(this.deanContactNumber)) ||
+                        (this.type === 'department' && !this.isValidPhoneNumber(this.hodContactNumber))) {
+                        Alpine.store('modal').open(false, 'Please enter a valid 10-digit or +91 10-digit phone number.');
+                        return;
+                    }
+
+                    const formData = new FormData(form);
+                    const data = {};
+                    let endpoint = '';
+
+                    if (this.type === 'school') {
+                        endpoint = 'https://hall-management.nirmaljyotib.workers.dev/api/school/create';
+                        data.school_name = formData.get('school_name');
+                        data.incharge_name = formData.get('incharge_name_school');
+                        data.incharge_contact_number = this.deanContactNumber;
+                        data.incharge_email = formData.get('incharge_email_school');
+                        data.incharge_intercom = this.deanIntercom;
+                        data.incharge_status = this.deanStatus;
+                    } else {
+                        endpoint = 'https://hall-management.nirmaljyotib.workers.dev/api/department/create';
+                        data.department_name = formData.get('department_name');
+                        data.school_id = this.selectedSchoolId;
+                        data.incharge_name = formData.get('incharge_name_dept');
+                        data.incharge_contact_number = this.hodContactNumber;
+                        data.incharge_email = formData.get('incharge_email_dept');
+                        data.incharge_intercom = this.hodIntercom;
+                        data.incharge_status = this.hodStatus;
+                    }
+
+                    try {
+                        const response = await fetch(endpoint, { 
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+                        const result = await response.json();
+                        if (response.ok) {
+                            Alpine.store('modal').open(true, 'Entry added successfully!');
+                            this.resetForm();
+                            if (this.type === 'school') this.fetchSchools();
+                        } else {
+                            Alpine.store('modal').open(false, `Entry not added. Reason: ${result.message || 'Unknown error'}`);
+                        }
+                    } catch (error) {
+                        Alpine.store('modal').open(false, 'Network error. Please check your connection.');
+                    }
+                }
+            }));
+        });
+    </script>
+    <script src="layout.js"></script>
+</body>
+</html>

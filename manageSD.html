@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage School & Department</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        /* Custom styles for Montserrat font and scrollable dropdowns */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        
+        /* Custom toggle switch */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: #4F46E5; }
+        input:focus + .toggle-slider { box-shadow: 0 0 1px #4F46E5; }
+        input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+        [x-cloak] { display: none !important; }
+
+        .filter-button {
+            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+        .filter-button.active {
+            color: #4F46E5; /* Indigo-600 */
+            background-color: #E0E7FF; /* Indigo-100 */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+   <!-- Placeholders for centralized header and navigation -->
+  <div id="header-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+    <main class="flex-grow p-6">
+        <div class="container mx-auto" x-data="manageS_D">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                 <h2 class="text-3xl font-bold text-white">Manage Schools & Departments</h2>
+                <div class="flex items-center space-x-3 bg-[rgba(0,0,0,0.2)] p-2 rounded-lg">
+                    <button @click="modifySelectedItem()" :disabled="selectedItems.length !== 1" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-md shadow-lg flex items-center space-x-2 transition-colors"><i class="fas fa-edit"></i><span>Modify</span></button>
+                    <button @click="confirmDeletion()" :disabled="selectedItems.length === 0" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-md shadow-lg flex items-center space-x-2 transition-colors"><i class="fas fa-trash-alt"></i><span>Delete</span></button>
+                    <button @click="resetFilters" :class="isAnyFilterActive ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-500 hover:bg-gray-600'" class="text-white font-bold py-2 px-4 rounded-md shadow-lg flex items-center space-x-2 transition-colors"><i class="fas fa-undo"></i></button>
+                    <div class="flex items-center space-x-2 text-white pl-2">
+                        <span>Multi-Select:</span>
+                        <label class="toggle-switch"><input type="checkbox" x-model="multipleSelectionEnabled"><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Bar -->
+            <div class="bg-white/10 p-4 rounded-lg mb-6 flex flex-wrap items-center justify-between gap-4 text-white">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 bg-gray-900/20 p-1 rounded-lg">
+                        <button @click="activeView = 'schools'" :class="{'bg-indigo-600 text-white': activeView === 'schools', 'text-gray-300 hover:bg-white/10': activeView !== 'schools'}" class="px-3 py-1 rounded-md transition-colors text-sm font-semibold">Schools</button>
+                        <button @click="activeView = 'departments'" :class="{'bg-indigo-600 text-white': activeView === 'departments', 'text-gray-300 hover:bg-white/10': activeView !== 'departments'}" class="px-3 py-1 rounded-md transition-colors text-sm font-semibold">Departments</button>
+                    </div>
+                    <button @click="modals.filter = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isAnyFilterActive}"><i class="fas fa-filter"></i> Filter</button>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-900/20 p-1 rounded-lg">
+                    <button @click="viewMode = 'card'" :class="{'bg-indigo-600 text-white': viewMode === 'card', 'text-gray-300 hover:bg-white/10': viewMode !== 'card'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-th-large"></i></button>
+                    <button @click="viewMode = 'table'" :class="{'bg-indigo-600 text-white': viewMode === 'table', 'text-gray-300 hover:bg-white/10': viewMode !== 'table'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+
+            <!-- MODALS -->
+            <div x-show="modals.filter" @click.away="modals.filter = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <button @click="modals.filter = false" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                    <!-- School Filter -->
+                    <div x-show="activeView === 'schools'">
+                        <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter Schools</h3>
+                        <div class="space-y-4 text-sm">
+                            <div class="relative" @click.away="modals.schoolFilterOpen = false">
+                                <label class="font-semibold">School Name:</label>
+                                <input type="text" x-model="filters.schoolSearchTerm" @focus="modals.schoolFilterOpen = true" @input.debounce.300ms="filters.schoolId = ''" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
+                                <div x-show="modals.schoolFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                    <template x-for="school in filteredSchoolsForFilter" :key="school.unique_id"><div @click="selectSchoolForFilter(school.unique_id)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="school.school_name"></div></template>
+                                </div>
+                            </div>
+                            <div><label class="font-semibold">Dean Name:</label><input type="text" x-model.debounce.300ms="filters.deanName" class="w-full p-2 border rounded mt-1"></div>
+                        </div>
+                    </div>
+                    <!-- Department Filter -->
+                    <div x-show="activeView === 'departments'">
+                         <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter Departments</h3>
+                        <div class="space-y-4 text-sm">
+                            <div class="relative" @click.away="modals.schoolFilterOpen = false">
+                                <label class="font-semibold">School Name:</label>
+                                <input type="text" x-model="filters.schoolSearchTerm" @focus="modals.schoolFilterOpen = true" @input.debounce.300ms="filters.schoolId = ''" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
+                                <div x-show="modals.schoolFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                    <template x-for="school in filteredSchoolsForFilter" :key="school.unique_id"><div @click="selectSchoolForFilter(school.unique_id)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="school.school_name"></div></template>
+                                </div>
+                            </div>
+                             <div class="relative" @click.away="modals.departmentFilterOpen = false">
+                                <label class="font-semibold">Department Name:</label>
+                                <input type="text" x-model="filters.departmentSearchTerm" @focus="modals.departmentFilterOpen = true" @input.debounce.300ms="filters.departmentId = ''" placeholder="Type to search department..." class="w-full p-2 border rounded mt-1">
+                                <div x-show="modals.departmentFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                    <template x-for="dept in filteredDepartmentsForFilter" :key="dept.unique_id"><div @click="selectDepartmentForFilter(dept.unique_id)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="dept.department_name"></div></template>
+                                </div>
+                            </div>
+                            <div><label class="font-semibold">HOD Name:</label><input type="text" x-model.debounce.300ms="filters.hodName" class="w-full p-2 border rounded mt-1"></div>
+                        </div>
+                    </div>
+                    <button @click="modals.filter = false" class="w-full mt-6 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Apply Filter</button>
+                </div>
+            </div>
+            
+            <!-- Confirmation Modal -->
+            <div x-show="modals.confirmDelete" @click.away="modals.confirmDelete = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center">
+                    <h3 class="text-lg font-semibold text-gray-800">Confirm Deletion</h3>
+                    <p class="text-gray-600 my-4">Are you sure you want to delete the selected item(s)? This action cannot be undone.</p>
+                    <div class="flex justify-center gap-4">
+                        <button @click="modals.confirmDelete = false" class="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
+                        <button @click="deleteSelectedItems()" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading/Error State -->
+            <div x-show="isLoading || errorMessage" class="p-4 text-center text-white"><span x-show="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Loading Data...</span><span x-show="errorMessage" class="text-red-400" x-text="errorMessage"></span></div>
+
+            <!-- Views Container -->
+            <div x-show="!isLoading && !errorMessage" x-cloak>
+                <!-- Schools View -->
+                <div x-show="activeView === 'schools'">
+                    <!-- Card View -->
+                    <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="school in filteredSchools" :key="school.unique_id">
+                            <div class="bg-white rounded-lg shadow-lg p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+                                <div>
+                                    <div class="flex justify-between items-start"><h3 class="font-bold text-lg text-gray-800" x-text="school.school_name"></h3><input type="checkbox" class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded" :checked="selectedItems.includes(school.unique_id)" @change="toggleItemSelection(school.unique_id)" :disabled="!multipleSelectionEnabled && selectedItems.length > 0 && !selectedItems.includes(school.unique_id)"></div>
+                                    <div class="mt-4 border-t pt-4 space-y-3 text-sm">
+                                        <div class="flex items-start text-gray-600"><i class="fas fa-user-tie w-5 text-center mr-2 text-gray-400 mt-1"></i><div><p class="font-semibold text-gray-800" x-text="school.incharge_name"></p><p class="text-xs">Dean</p></div></div>
+                                        <div class="flex items-center text-gray-600"><i class="fas fa-envelope w-5 text-center mr-2 text-gray-400"></i><span x-text="school.incharge_email"></span></div>
+                                        <div class="flex items-center text-gray-600"><i class="fas fa-phone w-5 text-center mr-2 text-gray-400"></i><span x-text="school.incharge_contact_number"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <!-- Table View -->
+                    <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Select</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">School Name</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dean</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th></tr></thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="school in filteredSchools" :key="school.unique_id">
+                                    <tr>
+                                        <td class="px-6 py-4"><input type="checkbox" class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded" :checked="selectedItems.includes(school.unique_id)" @change="toggleItemSelection(school.unique_id)" :disabled="!multipleSelectionEnabled && selectedItems.length > 0 && !selectedItems.includes(school.unique_id)"></td>
+                                        <td class="px-6 py-4 font-medium text-gray-900" x-text="school.school_name"></td>
+                                        <td class="px-6 py-4"><p x-text="school.incharge_name"></p><p class="text-xs text-gray-500" x-text="school.incharge_email"></p></td>
+                                        <td class="px-6 py-4 text-sm text-gray-700" x-text="school.incharge_contact_number"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Departments View -->
+                <div x-show="activeView === 'departments'">
+                    <!-- Card View -->
+                    <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="dept in filteredDepartments" :key="dept.unique_id">
+                            <div class="bg-white rounded-lg shadow-lg p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+                                <div>
+                                    <div class="flex justify-between items-start"><h3 class="font-bold text-lg text-gray-800" x-text="dept.department_name"></h3><input type="checkbox" class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded" :checked="selectedItems.includes(dept.unique_id)" @change="toggleItemSelection(dept.unique_id)" :disabled="!multipleSelectionEnabled && selectedItems.length > 0 && !selectedItems.includes(dept.unique_id)"></div>
+                                    <p class="text-sm text-indigo-600 font-semibold" x-text="dept.school_name"></p>
+                                    <div class="mt-4 border-t pt-4 space-y-3 text-sm">
+                                        <div class="flex items-start text-gray-600"><i class="fas fa-user-tie w-5 text-center mr-2 text-gray-400 mt-1"></i><div><p class="font-semibold text-gray-800" x-text="dept.incharge_name"></p><p class="text-xs">HOD</p></div></div>
+                                        <div class="flex items-center text-gray-600"><i class="fas fa-envelope w-5 text-center mr-2 text-gray-400"></i><span x-text="dept.incharge_email"></span></div>
+                                        <div class="flex items-center text-gray-600"><i class="fas fa-phone w-5 text-center mr-2 text-gray-400"></i><span x-text="dept.incharge_contact_number"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                     <!-- Table View -->
+                    <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Select</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department Name</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">School</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">HOD</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th></tr></thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <template x-for="dept in filteredDepartments" :key="dept.unique_id">
+                                    <tr>
+                                        <td class="px-6 py-4"><input type="checkbox" class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded" :checked="selectedItems.includes(dept.unique_id)" @change="toggleItemSelection(dept.unique_id)" :disabled="!multipleSelectionEnabled && selectedItems.length > 0 && !selectedItems.includes(dept.unique_id)"></td>
+                                        <td class="px-6 py-4 font-medium text-gray-900" x-text="dept.department_name"></td>
+                                        <td class="px-6 py-4 text-sm text-gray-700" x-text="dept.school_name"></td>
+                                        <td class="px-6 py-4"><p x-text="dept.incharge_name"></p><p class="text-xs text-gray-500" x-text="dept.incharge_email"></p></td>
+                                        <td class="px-6 py-4 text-sm text-gray-700" x-text="dept.incharge_contact_number"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div x-show="(activeView === 'schools' && filteredSchools.length === 0) || (activeView === 'departments' && filteredDepartments.length === 0)" class="text-center p-6 text-white col-span-full"><p>No items match the current filters.</p></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('manageS_D', () => ({
+            schools: [],
+            departments: [],
+            selectedItems: [],
+            multipleSelectionEnabled: false,
+            isLoading: true,
+            errorMessage: '',
+            activeView: 'schools', // 'schools' or 'departments'
+            viewMode: 'card', // 'card' or 'table'
+            modals: { filter: false, schoolFilterOpen: false, departmentFilterOpen: false, confirmDelete: false },
+            filters: {
+                schoolName: '', deanName: '',
+                departmentName: '', schoolId: '', hodName: '',
+                schoolSearchTerm: '', departmentSearchTerm: ''
+            },
+
+            init() { this.loadData(); this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); this.$watch('activeView', () => { this.selectedItems = []; this.resetFilters(); }); },
+
+            get filteredSchools() {
+                return this.schools.filter(s => {
+                    const f = this.filters;
+                    if (f.schoolId && s.unique_id !== f.schoolId) return false;
+                    if (f.deanName && !s.incharge_name.toLowerCase().includes(f.deanName.toLowerCase())) return false;
+                    return true;
+                });
+            },
+            get filteredDepartments() {
+                return this.departments.filter(d => {
+                    const f = this.filters;
+                    if (f.departmentId && d.unique_id !== f.departmentId) return false;
+                    if (f.schoolId && d.school_id !== f.schoolId) return false;
+                    if (f.hodName && !d.incharge_name.toLowerCase().includes(f.hodName.toLowerCase())) return false;
+                    return true;
+                });
+            },
+            get filteredSchoolsForFilter() {
+                if (!this.filters.schoolSearchTerm) return this.schools;
+                return this.schools.filter(s => s.school_name.toLowerCase().includes(this.filters.schoolSearchTerm.toLowerCase()));
+            },
+            get filteredDepartmentsForFilter() {
+                let depts = this.departments;
+                if (this.filters.schoolId) {
+                    depts = depts.filter(d => d.school_id === this.filters.schoolId);
+                }
+                if (!this.filters.departmentSearchTerm) return depts;
+                return depts.filter(d => d.department_name.toLowerCase().includes(this.filters.departmentSearchTerm.toLowerCase()));
+            },
+            
+            get isAnyFilterActive() {
+                const f = this.filters;
+                return f.schoolId || f.deanName || f.departmentId || f.hodName;
+            },
+
+            resetFilters() {
+                this.filters = { schoolName: '', deanName: '', departmentName: '', schoolId: '', hodName: '', schoolSearchTerm: '', departmentSearchTerm: '' };
+            },
+            
+            selectSchoolForFilter(schoolId) {
+                this.filters.schoolId = schoolId;
+                const school = this.schools.find(s => s.unique_id === schoolId);
+                if (school) this.filters.schoolSearchTerm = school.school_name;
+                this.filters.departmentId = '';
+                this.filters.departmentSearchTerm = '';
+                this.modals.schoolFilterOpen = false;
+            },
+            selectDepartmentForFilter(deptId) {
+                this.filters.departmentId = deptId;
+                const dept = this.departments.find(d => d.unique_id === deptId);
+                if (dept) {
+                    this.filters.departmentSearchTerm = dept.department_name;
+                    if (!this.filters.schoolId) this.selectSchoolForFilter(dept.school_id);
+                }
+                this.modals.departmentFilterOpen = false;
+            },
+
+            closeSchoolFilterDropdown() {
+                if (!this.filters.schoolId) this.filters.schoolSearchTerm = '';
+                this.modals.schoolFilterOpen = false;
+            },
+            closeDepartmentFilterDropdown() {
+                if (!this.filters.departmentId) this.filters.departmentSearchTerm = '';
+                this.modals.departmentFilterOpen = false;
+            },
+
+            async loadData() {
+                this.isLoading = true;
+                this.errorMessage = '';
+                try {
+                    const [schoolResponse, departmentResponse] = await Promise.all([
+                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'),
+                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department')
+                    ]);
+
+                    if (!schoolResponse.ok) throw new Error(`Schools API Error: ${schoolResponse.statusText}`);
+                    if (!departmentResponse.ok) throw new Error(`Departments API Error: ${departmentResponse.statusText}`);
+
+                    this.schools = await schoolResponse.json();
+                    const departmentsData = await departmentResponse.json();
+                    
+                    const schoolMap = new Map(this.schools.map(s => [s.unique_id, s.school_name]));
+                    this.departments = departmentsData.map(d => ({...d, school_name: schoolMap.get(d.school_id) || 'N/A' }));
+
+                } catch (error) {
+                    this.errorMessage = `An error occurred: ${error.message}. Please try again later.`;
+                    console.error('Error loading data:', error);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            toggleItemSelection(itemId) {
+                if (this.multipleSelectionEnabled) {
+                    const index = this.selectedItems.indexOf(itemId);
+                    if (index === -1) this.selectedItems.push(itemId);
+                    else this.selectedItems.splice(index, 1);
+                } else {
+                    this.selectedItems = this.selectedItems.includes(itemId) ? [] : [itemId];
+                }
+            },
+
+            modifySelectedItem() {
+                if (this.selectedItems.length !== 1) return;
+                const id = this.selectedItems[0];
+                const type = this.activeView === 'schools' ? 'school' : 'department';
+                window.location.href = `modifySD.html?id=${id}&type=${type}`;
+            },
+
+            confirmDeletion() {
+                if (this.selectedItems.length > 0) {
+                    this.modals.confirmDelete = true;
+                }
+            },
+
+            async deleteSelectedItems() {
+                this.modals.confirmDelete = false;
+                const type = this.activeView === 'schools' ? 'school' : 'department';
+                const endpoint = `https://hall-management.nirmaljyotib.workers.dev/api/${type}/delete`;
+
+                const promises = this.selectedItems.map(id => 
+                    fetch(`${endpoint}/${id}`, { method: 'DELETE' })
+                );
+
+                try {
+                    const responses = await Promise.all(promises);
+                    const failed = responses.filter(res => !res.ok);
+
+                    if (failed.length > 0) {
+                        throw new Error(`${failed.length} of ${this.selectedItems.length} deletions failed.`);
+                    }
+                    
+                    this.selectedItems = [];
+                    await this.loadData();
+                    // You can add a success notification here if you like
+                } catch (error) {
+                    console.error('Deletion error:', error);
+                    // You can add an error notification here
+                }
+            }
+        }));
+    });
+    </script>
+    <script src="layout.js"></script>
+</body>
+</html>

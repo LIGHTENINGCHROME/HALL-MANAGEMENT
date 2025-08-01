@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modify Details</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Placeholders for centralized header and navigation -->
+  <div id="header-placeholder"></div>
+
+    <main class="flex-grow p-6">
+        <div class="container mx-auto bg-[rgba(0,0,0,0.15)] p-8 rounded-lg shadow-xl" x-data="modifyForm">
+            <h2 class="text-3xl font-bold text-center text-white mb-8" x-text="`Modify ${type === 'school' ? 'School' : 'Department'}`"></h2>
+
+            <div x-show="isLoading" class="text-center text-white"><i class="fas fa-spinner fa-spin mr-2"></i>Loading details...</div>
+            <div x-show="errorMessage" class="text-center text-red-400" x-text="errorMessage"></div>
+
+            <form x-show="!isLoading && !errorMessage" @submit.prevent="submitForm" class="space-y-6 max-w-2xl mx-auto">
+                <div>
+                    <label :for="type === 'school' ? 'school_name' : 'department_name'" class="block text-white text-sm font-medium mb-2" x-text="type === 'school' ? 'School Name' : 'Department Name'"></label>
+                    <input type="text" :id="type === 'school' ? 'school_name' : 'department_name'" x-model="formData.name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800" required>
+                </div>
+
+                <div x-show="type === 'department'">
+                    <label for="school_id" class="block text-white text-sm font-medium mb-2">Parent School</label>
+                    <select id="school_id" name="school_id" x-model="formData.school_id" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800" :required="type === 'department'">
+                        <option value="" disabled>Select a school</option>
+                        <template x-for="school in schools" :key="school.unique_id">
+                            <option :value="school.unique_id" x-text="school.school_name"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="incharge_name" class="block text-white text-sm font-medium mb-2">Incharge Name</label>
+                    <input type="text" id="incharge_name" x-model="formData.incharge_name" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800" required>
+                </div>
+
+                <div>
+                    <label for="designation" class="block text-white text-sm font-medium mb-2">Designation</label>
+                    <input type="text" id="designation" x-model="formData.designation" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800" required>
+                </div>
+
+                <div>
+                    <label for="incharge_email" class="block text-white text-sm font-medium mb-2">Email</label>
+                    <input type="email" id="incharge_email" x-model="formData.incharge_email" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800" required>
+                </div>
+
+                <div>
+                    <label for="incharge_contact" class="block text-white text-sm font-medium mb-2">Contact Number</label>
+                    <input type="text" id="incharge_contact" x-model="formData.incharge_contact" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800" required>
+                </div>
+                
+                 <div>
+                    <label for="incharge_intercom" class="block text-white text-sm font-medium mb-2">Intercom</label>
+                    <input type="text" id="incharge_intercom" x-model="formData.incharge_intercom" class="block w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-800">
+                </div>
+
+                <div class="flex justify-end space-x-4 pt-4">
+                    <button type="button" @click="window.location.href='manageSD.html'" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-md shadow-lg">Cancel</button>
+                    <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-md shadow-lg">Save Changes</button>
+                </div>
+            </form>
+
+            <!-- Notification Modal -->
+            <div x-show="showNotification" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50" x-cloak>
+                <div x-show="showNotification"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 transform scale-90"
+                     x-transition:enter-end="opacity-100 transform scale-100"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100 transform scale-100"
+                     x-transition:leave-end="opacity-0 transform scale-90"
+                     @click.away="closeNotification" 
+                     class="bg-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-md mx-4">
+                    
+                    <!-- Icon -->
+                    <div class="mb-4">
+                        <template x-if="notificationSuccess">
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
+                                <i class="fas fa-check text-green-600 text-3xl"></i>
+                            </div>
+                        </template>
+                        <template x-if="!notificationSuccess">
+                            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                                <i class="fas fa-times text-red-600 text-3xl"></i>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Message -->
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2" x-text="notificationSuccess ? 'Success!' : 'Error!'"></h3>
+                    <p class="text-gray-600 mb-6" x-text="notificationMessage"></p>
+                    
+                    <!-- Button -->
+                    <button @click="closeNotification" 
+                            :class="notificationSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'"
+                            class="text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('modifyForm', () => ({
+                type: '',
+                id: '',
+                isLoading: true,
+                errorMessage: '',
+                schools: [],
+                formData: {
+                    name: '',
+                    school_id: '',
+                    incharge_name: '',
+                    designation: '',
+                    incharge_email: '',
+                    incharge_contact: '',
+                    incharge_intercom: ''
+                },
+                showNotification: false,
+                notificationMessage: '',
+                notificationSuccess: false,
+
+                async init() {
+                    const params = new URLSearchParams(window.location.search);
+                    this.type = params.get('type');
+                    this.id = params.get('id');
+
+                    if (!this.type || !this.id) {
+                        this.errorMessage = 'No item selected for modification.';
+                        this.isLoading = false;
+                        return;
+                    }
+                    
+                    if (this.type === 'department') {
+                        await this.fetchSchools();
+                    }
+                    await this.fetchDetails();
+                },
+
+                async fetchSchools() {
+                    try {
+                        const response = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools');
+                        if (!response.ok) throw new Error('Could not load schools');
+                        const data = await response.json();
+                        this.schools = (Array.isArray(data) ? data : data.schools || data.data || []).filter(s => s && s.unique_id && s.school_name);
+                    } catch (error) {
+                        this.errorMessage = error.message;
+                    }
+                },
+
+                async fetchDetails() {
+                    this.isLoading = true;
+                    const endpoint = this.type === 'school' ? 'all-schools' : 'all-department';
+                    const listUrl = `https://hall-management.nirmaljyotib.workers.dev/api/${this.type}/${endpoint}`;
+                    try {
+                        const response = await fetch(listUrl);
+                        if (!response.ok) throw new Error('Could not fetch item details.');
+                        const data = await response.json();
+
+                        const listKey = this.type === 'school' ? 'schools' : 'departments';
+                        const list = Array.isArray(data) ? data : data[listKey] || data.data || [];
+                        const item = list.find(d => d.unique_id === this.id);
+
+                        if (!item) throw new Error('Item not found.');
+                        
+                        if (this.type === 'school') {
+                            this.formData.name = item.school_name;
+                            this.formData.incharge_contact = item.incharge_contact_number;
+                        } else {
+                            this.formData.name = item.department_name;
+                            this.formData.school_id = item.school_id;
+                            this.formData.incharge_contact = item.incharge_contact_mobile || item.incharge_contact_number;
+                        }
+                        this.formData.incharge_name = item.incharge_name;
+                        this.formData.designation = item.designation;
+                        this.formData.incharge_email = item.incharge_email;
+                        this.formData.incharge_intercom = item.incharge_intercom;
+
+                    } catch (error) {
+                        this.errorMessage = error.message;
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                showCustomNotification(message, isSuccess) {
+                    this.notificationMessage = message;
+                    this.notificationSuccess = isSuccess;
+                    this.showNotification = true;
+                },
+
+                closeNotification() {
+                    this.showNotification = false;
+                    if (this.notificationSuccess) {
+                        window.location.href = 'manageSD.html';
+                    }
+                },
+
+                async submitForm() {
+                    const url = `https://hall-management.nirmaljyotib.workers.dev/api/${this.type}/${this.id}`;
+                    let payload = {};
+
+                    if (this.type === 'school') {
+                        payload = {
+                            school_name: this.formData.name,
+                            incharge_name: this.formData.incharge_name,
+                            designation: this.formData.designation,
+                            incharge_email: this.formData.incharge_email,
+                            incharge_contact_number: this.formData.incharge_contact,
+                            incharge_intercom: this.formData.incharge_intercom,
+                            incharge_status: "PERMANENT" // Assuming this is constant
+                        };
+                    } else {
+                        payload = {
+                            department_name: this.formData.name,
+                            school_id: this.formData.school_id,
+                            incharge_name: this.formData.incharge_name,
+                            designation: this.formData.designation,
+                            incharge_email: this.formData.incharge_email,
+                            incharge_contact_number: this.formData.incharge_contact,
+                            incharge_intercom: this.formData.incharge_intercom,
+                            incharge_status: "PERMANENT" // Assuming this is constant
+                        };
+                    }
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Update failed: ${errorText}`);
+                        }
+                        
+                        this.showCustomNotification('Update successful!', true);
+
+                    } catch (error) {
+                        this.showCustomNotification(error.message, false);
+                        console.error('Update error:', error);
+                    }
+                }
+            }));
+        });
+    </script>
+    <script src="layout.js"></script>
+</body>
+</html>

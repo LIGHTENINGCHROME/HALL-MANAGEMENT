@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Halls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Defer AlpineJS script to ensure it runs after the DOM is parsed -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        /* Custom styles for Montserrat font and scrollable dropdowns */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        
+        /* Custom toggle switch */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 28px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .toggle-slider { background-color: #4F46E5; }
+        input:focus + .toggle-slider { box-shadow: 0 0 1px #4F46E5; }
+        input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+        [x-cloak] { display: none !important; }
+
+        .filter-button {
+            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+        .filter-button.active {
+            color: #4F46E5; /* Indigo-600 */
+            background-color: #E0E7FF; /* Indigo-100 */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+      <div id="header-placeholder"></div>
+  <div id="nav-placeholder"></div>
+
+    <main class="flex-grow p-6">
+        <div class="container mx-auto" x-data="manageHalls">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                 <h2 class="text-3xl font-bold text-white">Manage Halls</h2>
+                <div class="flex items-center space-x-3 bg-[rgba(0,0,0,0.2)] p-2 rounded-lg">
+                    <button @click="modifySelectedItem()" :disabled="selectedItems.length !== 1" class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-md shadow-lg flex items-center space-x-2 transition-colors"><i class="fas fa-edit"></i><span>Modify</span></button>
+                    <button @click="confirmDeletion()" :disabled="selectedItems.length === 0" class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-md shadow-lg flex items-center space-x-2 transition-colors"><i class="fas fa-trash-alt"></i><span>Delete</span></button>
+                    <button @click="resetFilters" :class="isAnyFilterActive ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-500 hover:bg-gray-600'" class="text-white font-bold py-2 px-4 rounded-md shadow-lg flex items-center space-x-2 transition-colors"><i class="fas fa-undo"></i></button>
+                    <div class="flex items-center space-x-2 text-white pl-2">
+                        <span>Multi-Select:</span>
+                        <label class="toggle-switch"><input type="checkbox" x-model="multipleSelectionEnabled"><span class="toggle-slider"></span></label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Bar -->
+            <div class="bg-white/10 p-4 rounded-lg mb-6 flex flex-wrap items-center justify-between gap-4 text-white">
+                <div class="flex items-center gap-4">
+                    <span class="font-semibold">Filters:</span>
+                    <button @click="modals.hallDetails = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('hallDetails')}"><i class="fas fa-building"></i> Hall Details</button>
+                    <button @click="modals.belongsTo = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('belongsTo')}"><i class="fas fa-sitemap"></i> Belongs To</button>
+                    <button @click="modals.features = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('features')}"><i class="fas fa-star"></i> Features</button>
+                    <button @click="modals.status = true" class="px-3 py-1 rounded-full text-sm flex items-center gap-2 filter-button" :class="{'active': isFilterActive('status')}"><i class="fas fa-check-circle"></i> Status</button>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-900/20 p-1 rounded-lg">
+                    <button @click="viewMode = 'card'" :class="{'bg-indigo-600 text-white': viewMode === 'card', 'text-gray-300 hover:bg-white/10': viewMode !== 'card'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-th-large"></i></button>
+                    <button @click="viewMode = 'table'" :class="{'bg-indigo-600 text-white': viewMode === 'table', 'text-gray-300 hover:bg-white/10': viewMode !== 'table'}" class="px-3 py-1 rounded-md transition-colors"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+
+            <!-- MODALS -->
+            <div x-show="modals.hallDetails" @click.away="modals.hallDetails = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg relative">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="text-xl font-bold text-indigo-600">Filter Hall Details</h3>
+                        <button @click="modals.hallDetails = false" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                    </div>
+                    <div class="space-y-6 text-sm">
+                        <div class="relative" @click.away="modals.hallNameOpen = false">
+                            <label class="font-semibold text-gray-700">Hall Name:</label>
+                            <input type="text" x-model="filters.nameSearchTerm" @focus="modals.hallNameOpen = true" @input.debounce.300ms="filters.name = ''" placeholder="Type to search hall..." class="w-full p-2 border rounded mt-1">
+                            <div x-show="modals.hallNameOpen" class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                <template x-for="hall in filteredHallNames" :key="hall.unique_id"><div @click="selectHallNameForFilter(hall.name)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="hall.name"></div></template>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-gray-700">Hall Type:</label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+                                <button @click="toggleFilter('type', 'SEMINAR')" :class="{'bg-indigo-600 text-white': filters.type === 'SEMINAR', 'bg-gray-200 hover:bg-gray-300': filters.type !== 'SEMINAR'}" class="px-3 py-2 rounded-md transition-colors">Seminar</button>
+                                <button @click="toggleFilter('type', 'AUDITORIUM')" :class="{'bg-indigo-600 text-white': filters.type === 'AUDITORIUM', 'bg-gray-200 hover:bg-gray-300': filters.type !== 'AUDITORIUM'}" class="px-3 py-2 rounded-md transition-colors">Auditorium</button>
+                                <button @click="toggleFilter('type', 'LECTURE')" :class="{'bg-indigo-600 text-white': filters.type === 'LECTURE', 'bg-gray-200 hover:bg-gray-300': filters.type !== 'LECTURE'}" class="px-3 py-2 rounded-md transition-colors">Lecture</button>
+                                <button @click="toggleFilter('type', 'CONFERENCE')" :class="{'bg-indigo-600 text-white': filters.type === 'CONFERENCE', 'bg-gray-200 hover:bg-gray-300': filters.type !== 'CONFERENCE'}" class="px-3 py-2 rounded-md transition-colors">Conference</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-gray-700">Capacity:</label>
+                            <div class="grid grid-cols-3 gap-2 mt-2">
+                                <button @click="toggleFilter('capacity', '<50')" :class="{'bg-indigo-600 text-white': filters.capacity === '<50', 'bg-gray-200 hover:bg-gray-300': filters.capacity !== '<50'}" class="px-3 py-2 rounded-md transition-colors">&lt; 50</button>
+                                <button @click="toggleFilter('capacity', '50-100')" :class="{'bg-indigo-600 text-white': filters.capacity === '50-100', 'bg-gray-200 hover:bg-gray-300': filters.capacity !== '50-100'}" class="px-3 py-2 rounded-md transition-colors">50-100</button>
+                                <button @click="toggleFilter('capacity', '>100')" :class="{'bg-indigo-600 text-white': filters.capacity === '>100', 'bg-gray-200 hover:bg-gray-300': filters.capacity !== '>100'}" class="px-3 py-2 rounded-md transition-colors">&gt; 100</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <label class="font-semibold text-gray-700">Floor:</label>
+                                <div class="flex flex-col gap-2 mt-2">
+                                    <button @click="toggleFilter('floor', 'GROUND')" :class="{'bg-indigo-600 text-white': filters.floor === 'GROUND', 'bg-gray-200 hover:bg-gray-300': filters.floor !== 'GROUND'}" class="px-3 py-2 rounded-md transition-colors text-left">Ground</button>
+                                    <button @click="toggleFilter('floor', 'FIRST')" :class="{'bg-indigo-600 text-white': filters.floor === 'FIRST', 'bg-gray-200 hover:bg-gray-300': filters.floor !== 'FIRST'}" class="px-3 py-2 rounded-md transition-colors text-left">First</button>
+                                    <button @click="toggleFilter('floor', 'SECOND')" :class="{'bg-indigo-600 text-white': filters.floor === 'SECOND', 'bg-gray-200 hover:bg-gray-300': filters.floor !== 'SECOND'}" class="px-3 py-2 rounded-md transition-colors text-left">Second</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="font-semibold text-gray-700">Zone:</label>
+                                <div class="flex flex-col gap-2 mt-2">
+                                    <button @click="toggleFilter('zone', 'NORTH')" :class="{'bg-indigo-600 text-white': filters.zone === 'NORTH', 'bg-gray-200 hover:bg-gray-300': filters.zone !== 'NORTH'}" class="px-3 py-2 rounded-md transition-colors text-left">North</button>
+                                    <button @click="toggleFilter('zone', 'SOUTH')" :class="{'bg-indigo-600 text-white': filters.zone === 'SOUTH', 'bg-gray-200 hover:bg-gray-300': filters.zone !== 'SOUTH'}" class="px-3 py-2 rounded-md transition-colors text-left">South</button>
+                                    <button @click="toggleFilter('zone', 'EAST')" :class="{'bg-indigo-600 text-white': filters.zone === 'EAST', 'bg-gray-200 hover:bg-gray-300': filters.zone !== 'EAST'}" class="px-3 py-2 rounded-md transition-colors text-left">East</button>
+                                    <button @click="toggleFilter('zone', 'WEST')" :class="{'bg-indigo-600 text-white': filters.zone === 'WEST', 'bg-gray-200 hover:bg-gray-300': filters.zone !== 'WEST'}" class="px-3 py-2 rounded-md transition-colors text-left">West</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-4 mt-6">
+                         <button @click="resetHallDetailsFilter(); modals.hallDetails = false" class="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200">Clear</button>
+                         <button @click="modals.hallDetails = false" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Apply Filter</button>
+                    </div>
+                </div>
+            </div>
+            <div x-show="modals.belongsTo" @click.away="modals.belongsTo = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <button @click="modals.belongsTo = false" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                    <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter School/Department/Section</h3>
+                    <div class="space-y-4 text-sm">
+                        <div><label class="font-semibold">Type:</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label><input type="radio" x-model="filters.ownerType" value="department"> Department</label><label><input type="radio" x-model="filters.ownerType" value="school"> School</label><label><input type="radio" x-model="filters.ownerType" value="administration"> Administration</label></div></div>
+                        <div x-show="filters.ownerType === 'school' || filters.ownerType === 'department'" class="relative" @click.away="closeSchoolFilterDropdown()">
+                            <label class="font-semibold">School Name:</label>
+                            <input type="text" x-model="filters.schoolSearchTerm" @focus="modals.schoolFilterOpen = true" @input.debounce.300ms="filters.schoolId = ''" placeholder="Type to search school..." class="w-full p-2 border rounded mt-1">
+                            <div x-show="modals.schoolFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                <template x-for="school in filteredSchoolsForFilter" :key="school.value"><div @click="selectSchoolForFilter(school.value)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="school.label"></div></template>
+                            </div>
+                        </div>
+                        <div x-show="filters.ownerType === 'department'" class="relative" @click.away="closeDepartmentFilterDropdown()">
+                            <label class="font-semibold">Department:</label>
+                            <input type="text" x-model="filters.departmentSearchTerm" @focus="modals.departmentFilterOpen = true" @input.debounce.300ms="filters.departmentId = ''" placeholder="Type to search department..." class="w-full p-2 border rounded mt-1">
+                            <div x-show="modals.departmentFilterOpen" x-transition class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                <template x-for="dept in filteredDepartmentsForFilter" :key="dept.value"><div @click="selectDepartmentForFilter(dept.value)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="dept.label"></div></template>
+                            </div>
+                        </div>
+                    </div>
+                    <button @click="modals.belongsTo = false" class="w-full mt-6 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Apply Filter</button>
+                </div>
+            </div>
+            <div x-show="modals.features" @click.away="modals.features = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <button @click="modals.features = false" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                    <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter Features</h3>
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <template x-for="feature in allFeatures" :key="feature"><label class="flex items-center"><input type="checkbox" :value="feature" x-model="filters.features" class="mr-2"><span x-text="feature"></span></label></template>
+                    </div>
+                    <button @click="modals.features = false" class="w-full mt-6 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Apply Filter</button>
+                </div>
+            </div>
+            <div x-show="modals.status" @click.away="modals.status = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+                    <button @click="modals.status = false" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                    <h3 class="text-xl font-bold mb-4 border-b pb-2 text-indigo-600">Filter by Status</h3>
+                    <div class="grid grid-cols-3 gap-2 mt-2">
+                        <button @click="toggleFilter('status', 'Available')" :class="{'bg-indigo-600 text-white': filters.status === 'Available', 'bg-gray-200 hover:bg-gray-300': filters.status !== 'Available'}" class="px-3 py-2 rounded-md transition-colors">Available</button>
+                        <button @click="toggleFilter('status', 'Under Construction')" :class="{'bg-indigo-600 text-white': filters.status === 'Under Construction', 'bg-gray-200 hover:bg-gray-300': filters.status !== 'Under Construction'}" class="px-3 py-2 rounded-md transition-colors">Under Construction</button>
+                        <button @click="toggleFilter('status', 'Awaiting Inauguration')" :class="{'bg-indigo-600 text-white': filters.status === 'Awaiting Inauguration', 'bg-gray-200 hover:bg-gray-300': filters.status !== 'Awaiting Inauguration'}" class="px-3 py-2 rounded-md transition-colors text-center">Awaiting Inauguration</button>
+                    </div>
+                    <button @click="modals.status = false" class="w-full mt-6 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Apply Filter</button>
+                </div>
+            </div>
+             <!-- Confirmation Modal -->
+            <div x-show="modals.confirmDelete" @click.away="modals.confirmDelete = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm text-center">
+                    <h3 class="text-lg font-semibold text-gray-800">Confirm Deletion</h3>
+                    <p class="text-gray-600 my-4">Are you sure you want to delete the selected item(s)? This action cannot be undone.</p>
+                    <div class="flex justify-center gap-4">
+                        <button @click="modals.confirmDelete = false" class="px-4 py-2 rounded-lg text-gray-600 bg-gray-100 hover:bg-gray-200">Cancel</button>
+                        <button @click="deleteSelectedItems()" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">Delete</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Modal -->
+            <div x-show="notification.show" @click.away="notification.show = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+                    <div class="flex-shrink-0 mx-auto mb-4">
+                        <i class="fas text-5xl" :class="{ 'fa-check-circle text-green-500': notification.success, 'fa-times-circle text-red-500': !notification.success }"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900" x-text="notification.title"></h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-600" x-text="notification.message" style="word-wrap: break-word;"></p>
+                    </div>
+                    <div class="mt-4">
+                        <button @click="notification.show = false" class="bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700">OK</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading/Error State -->
+            <div x-show="isLoading || errorMessage" class="p-4 text-center text-white"><span x-show="isLoading"><i class="fas fa-spinner fa-spin mr-2"></i>Loading Data...</span><span x-show="errorMessage" class="text-red-400" x-text="errorMessage"></span></div>
+
+            <!-- Views Container -->
+            <div x-show="!isLoading && !errorMessage" x-cloak>
+                <!-- Card View -->
+                <div x-show="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <template x-for="hall in filteredHalls" :key="hall.unique_id">
+                        <div class="bg-white rounded-lg shadow-lg p-5 flex flex-col justify-between transition-all duration-300 hover:shadow-xl hover:scale-[1.02]">
+                            <div>
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <p class="text-xs text-gray-500" x-text="hall.date"></p>
+                                        <h3 class="font-bold text-lg text-gray-800 uppercase" x-text="hall.name"></h3>
+                                        <p class="text-sm text-indigo-600 font-semibold" x-text="hall.type"></p>
+                                        <p x-show="hall.assigned_to" class="text-sm font-bold text-gray-700 mt-1 uppercase" x-text="hall.assigned_to"></p>
+                                    </div>
+                                    <input type="checkbox" class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded" :checked="selectedItems.includes(hall.unique_id)" @change="toggleItemSelection(hall.unique_id)" :disabled="!multipleSelectionEnabled && selectedItems.length > 0 && !selectedItems.includes(hall.unique_id)">
+                                </div>
+                                <div class="mt-4 border-t pt-4 space-y-3 text-sm">
+                                    <div class="flex items-center text-gray-600"><i class="fas fa-users w-5 text-center mr-2 text-gray-400"></i><span class="font-semibold" x-text="hall.capacity + ' Capacity'"></span></div>
+                                    <div class="flex items-start text-gray-600"><i class="fas fa-map-marker-alt w-5 text-center mr-2 text-gray-400 mt-1"></i>
+                                        <div>
+                                            <p class="font-semibold" x-text="hall.floor + ', ' + hall.zone"></p>
+                                            <p class="text-xs text-gray-400" x-show="hall.latitude != null && hall.longitude != null" x-text="`Lat: ${hall.latitude}, Lon: ${hall.longitude}`"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start text-gray-600"><i class="fas fa-sitemap w-5 text-center mr-2 text-gray-400 mt-1"></i>
+                                        <div>
+                                            <p class="font-bold text-gray-800" x-text="hall.primaryOwner"></p>
+                                            <p class="font-semibold" x-text="hall.secondaryOwner"></p>
+                                        </div>
+                                    </div>
+                                     <div class="mt-4 border-t pt-4 flex items-start text-gray-600"><i class="fas fa-user-shield w-5 text-center mr-2 text-gray-400 mt-1"></i>
+                                        <div>
+                                            <p class="font-bold text-gray-800" x-text="hall.incharge_name"></p>
+                                            <p class="font-semibold" x-text="hall.incharge_email"></p>
+                                            <p class="font-semibold" x-text="hall.incharge_contact_number"></p>
+                                        </div>
+                                    </div>
+                                     <div class="mt-4 border-t pt-4">
+                                        <h4 class="text-xs font-semibold text-gray-400 uppercase mb-2">Features</h4>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="feature in hall.features" :key="feature">
+                                                <span class="bg-gray-100 text-gray-700 text-xs font-medium px-2.5 py-1 rounded-full" x-text="feature"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex justify-end items-center">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" :class="hall.statusColor" x-text="hall.status"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Table View -->
+                <div x-show="viewMode === 'table'" class="bg-white rounded-lg shadow-md overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Select</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hall Details</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Belongs To</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Incharge</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Features</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th></tr></thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="hall in filteredHalls" :key="hall.unique_id">
+                                <tr>
+                                    <td class="px-6 py-4"><input type="checkbox" class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded" :checked="selectedItems.includes(hall.unique_id)" @change="toggleItemSelection(hall.unique_id)" :disabled="!multipleSelectionEnabled && selectedItems.length > 0 && !selectedItems.includes(hall.unique_id)"></td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-gray-700" x-text="hall.date"></td>
+                                    <td class="px-6 py-4"><a href="#" class="text-indigo-600 hover:underline font-bold uppercase" x-text="hall.type"></a><p class="text-gray-900 font-bold uppercase" x-text="hall.name"></p><p x-show="hall.assigned_to" class="text-xs font-bold text-indigo-700 uppercase" x-text="hall.assigned_to"></p><p class="text-xs font-semibold text-gray-700" x-text="hall.capacity + ' Cap'"></p><p class="text-xs font-semibold text-gray-700" x-text="hall.floor"></p><p class="text-xs font-semibold text-gray-700" x-text="hall.zone"></p><p class="text-xs text-gray-500" x-show="hall.latitude != null && hall.longitude != null" x-text="`Lat: ${hall.latitude}, Lon: ${hall.longitude}`"></p></td>
+                                    <td class="px-6 py-4"><p class="text-gray-900 font-bold" x-text="hall.primaryOwner"></p><p class="text-sm font-semibold text-gray-700" x-text="hall.secondaryOwner"></p></td>
+                                    <td class="px-6 py-4 text-sm"><p class="text-gray-900 font-bold" x-text="hall.incharge_name"></p><p class="text-xs font-semibold" x-text="hall.incharge_email"></p><p class="text-xs font-semibold" x-text="hall.incharge_contact_number"></p></td>
+                                    <td class="px-6 py-4 text-sm font-semibold text-gray-600" x-text="hall.features.join(', ')"></td>
+                                    <td class="px-6 py-4"><span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full" :class="hall.statusColor" x-text="hall.status"></span></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div x-show="filteredHalls.length === 0 && !isLoading" class="text-center p-6 text-white col-span-full"><p>No halls match the current filters.</p></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('manageHalls', () => ({
+            halls: [],
+            schoolOptions: [],
+            departmentOptions: [],
+            allFeatures: ['AC', 'Audio', 'Black Board', 'Computer', 'Lift', 'Podium', 'Projector', 'Ramp', 'Smart Board', 'White Board', 'WIFI'],
+            selectedItems: [],
+            multipleSelectionEnabled: false,
+            isLoading: true,
+            errorMessage: '',
+            viewMode: 'card', // 'card' or 'table'
+            modals: { hallDetails: false, belongsTo: false, features: false, schoolFilterOpen: false, departmentFilterOpen: false, hallNameOpen: false, status: false, confirmDelete: false },
+            notification: { show: false, success: false, title: '', message: '' },
+            filters: {
+                name: '', type: '', capacity: '', floor: '', zone: '',
+                ownerType: '', schoolId: '', departmentId: '',
+                features: [], status: '',
+                schoolSearchTerm: '', departmentSearchTerm: '', nameSearchTerm: ''
+            },
+
+            init() { this.loadData(); this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); },
+
+            get filteredHalls() {
+                return this.halls.filter(hall => {
+                    const f = this.filters;
+                    if (f.name && hall.name !== f.name) return false;
+                    if (f.type && hall.type.toUpperCase() !== f.type) return false;
+                    if (f.floor && hall.floor.toUpperCase().split(' ')[0] !== f.floor) return false;
+                    if (f.zone && hall.zone.toUpperCase().split(' ')[0] !== f.zone) return false;
+                    if (f.capacity) {
+                        if (f.capacity === '<50' && hall.capacity >= 50) return false;
+                        if (f.capacity === '50-100' && (hall.capacity < 50 || hall.capacity > 100)) return false;
+                        if (f.capacity === '>100' && hall.capacity <= 100) return false;
+                    }
+                    if (f.ownerType === 'administration' && hall.primaryOwner !== 'Administration') return false;
+                    if (f.ownerType === 'school' && !hall.school_id) return false;
+                    if (f.ownerType === 'department' && !hall.department_id) return false;
+                    if (f.schoolId && hall.school_id !== f.schoolId) return false;
+                    if (f.departmentId && hall.department_id !== f.departmentId) return false;
+                    if (f.features.length > 0 && !f.features.every(feature => hall.features.includes(feature))) return false;
+                    if (f.status && hall.status !== f.status) return false;
+                    return true;
+                });
+            },
+            
+            get filteredSchoolsForFilter() {
+                if (!this.filters.schoolSearchTerm) return this.schoolOptions;
+                return this.schoolOptions.filter(s => s.label.toLowerCase().includes(this.filters.schoolSearchTerm.toLowerCase()));
+            },
+            get filteredDepartmentsForFilter() {
+                let depts = this.departmentOptions;
+                if (this.filters.schoolId) {
+                    depts = depts.filter(d => d.schoolId === this.filters.schoolId);
+                }
+                if (!this.filters.departmentSearchTerm) return depts;
+                return depts.filter(d => d.label.toLowerCase().includes(this.filters.departmentSearchTerm.toLowerCase()));
+            },
+            get filteredHallNames() {
+                if (!this.filters.nameSearchTerm) return this.halls;
+                return this.halls.filter(h => h.name.toLowerCase().includes(this.filters.nameSearchTerm.toLowerCase()));
+            },
+
+            isFilterActive(filterGroup) {
+                if (filterGroup === 'hallDetails') return this.filters.name || this.filters.type || this.filters.capacity || this.filters.floor || this.filters.zone;
+                if (filterGroup === 'belongsTo') return this.filters.ownerType || this.filters.schoolId || this.filters.departmentId;
+                if (filterGroup === 'features') return this.filters.features.length > 0;
+                if (filterGroup === 'status') return this.filters.status;
+                return false;
+            },
+            
+            get isAnyFilterActive() {
+                return this.isFilterActive('hallDetails') || this.isFilterActive('belongsTo') || this.isFilterActive('features') || this.isFilterActive('status');
+            },
+
+            resetFilters() {
+                this.filters = { name: '', type: '', capacity: '', floor: '', zone: '', ownerType: '', schoolId: '', departmentId: '', features: [], status: '', schoolSearchTerm: '', departmentSearchTerm: '', nameSearchTerm: '' };
+            },
+            
+            selectSchoolForFilter(schoolId) {
+                this.filters.schoolId = schoolId;
+                const school = this.schoolOptions.find(s => s.value === schoolId);
+                if (school) this.filters.schoolSearchTerm = school.label;
+                this.filters.departmentId = '';
+                this.filters.departmentSearchTerm = '';
+                this.modals.schoolFilterOpen = false;
+            },
+            selectDepartmentForFilter(deptId) {
+                this.filters.departmentId = deptId;
+                const dept = this.departmentOptions.find(d => d.value === deptId);
+                if (dept) {
+                    this.filters.departmentSearchTerm = dept.label;
+                    if (!this.filters.schoolId) this.selectSchoolForFilter(dept.schoolId);
+                }
+                this.modals.departmentFilterOpen = false;
+            },
+            selectHallNameForFilter(name) {
+                this.filters.name = name;
+                this.filters.nameSearchTerm = name;
+                this.modals.hallNameOpen = false;
+            },
+
+            closeSchoolFilterDropdown() {
+                if (!this.filters.schoolId) this.filters.schoolSearchTerm = '';
+                this.modals.schoolFilterOpen = false;
+            },
+            closeDepartmentFilterDropdown() {
+                if (!this.filters.departmentId) this.filters.departmentSearchTerm = '';
+                this.modals.departmentFilterOpen = false;
+            },
+            toggleFilter(key, value) {
+                if (this.filters[key] === value) {
+                    this.filters[key] = '';
+                } else {
+                    this.filters[key] = value;
+                }
+            },
+            resetHallDetailsFilter() {
+                this.filters.name = '';
+                this.filters.nameSearchTerm = '';
+                this.filters.type = '';
+                this.filters.capacity = '';
+                this.filters.floor = '';
+                this.filters.zone = '';
+            },
+            
+            async loadData() {
+                this.isLoading = true;
+                this.errorMessage = '';
+                try {
+                    const hallResponse = await fetch('https://hall-management.nirmaljyotib.workers.dev/api/hall/all-hall');
+                    if (!hallResponse.ok) throw new Error(`Halls API Error: ${hallResponse.statusText}`);
+                    const hallData = await hallResponse.json();
+                    const hallList = (Array.isArray(hallData) ? hallData : hallData.halls || hallData.data || []).filter(h => h && h.unique_id && h.name);
+
+                    this.halls = hallList.map(hall => {
+                        let status = 'Available';
+                        let statusColor = 'bg-green-100 text-green-800';
+                        if (!hall.availability) {
+                            if (hall.unavailability_reason === 'AWAITING_INAUGURATION') {
+                                status = 'Awaiting Inauguration';
+                                statusColor = 'bg-yellow-100 text-yellow-800';
+                            } else {
+                                status = 'Under Construction';
+                                statusColor = 'bg-red-100 text-red-800';
+                            }
+                        }
+
+                        return {
+                            ...hall,
+                            primaryOwner: 'Loading...', secondaryOwner: '',
+                            incharge_name: 'Loading...', incharge_email: '', incharge_contact_number: '',
+                            status: status,
+                            statusColor: statusColor,
+                            date: hall.created_at ? new Date(hall.created_at).toISOString().split('T')[0] : 'N/A',
+                            floor: hall.floor ? hall.floor.charAt(0).toUpperCase() + hall.floor.slice(1).toLowerCase() + ' Floor' : 'N/A',
+                            zone: hall.zone ? hall.zone.charAt(0).toUpperCase() + hall.zone.slice(1).toLowerCase() + ' Zone' : 'N/A',
+                            features: Array.isArray(hall.features) ? hall.features.map(f => f.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).sort() : []
+                        };
+                    });
+                    this.isLoading = false;
+
+                    const [schoolResponse, departmentResponse] = await Promise.all([
+                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/school/all-schools'),
+                        fetch('https://hall-management.nirmaljyotib.workers.dev/api/department/all-department')
+                    ]);
+
+                    if (!schoolResponse.ok || !departmentResponse.ok) {
+                         this.halls.forEach(hall => { hall.primaryOwner = 'N/A'; });
+                         console.error("Could not fetch school or department data.");
+                         return;
+                    }
+
+                    const schoolData = await schoolResponse.json();
+                    const departmentData = await departmentResponse.json();
+                    
+                    const schoolList = (Array.isArray(schoolData) ? schoolData : schoolData.schools || schoolData.data || []).filter(s => s && s.unique_id && s.school_name);
+                    const departmentList = (Array.isArray(departmentData) ? departmentData : departmentData.departments || departmentData.data || []).filter(d => d && d.unique_id && d.department_name);
+
+                    const schoolMap = new Map(schoolList.map(s => [s.unique_id, s]));
+                    const departmentMap = new Map(departmentList.map(d => [d.unique_id, d]));
+                    
+                    this.schoolOptions = schoolList.map(s => ({ value: s.unique_id, label: s.school_name }));
+                    this.departmentOptions = departmentList.map(d => ({ value: d.unique_id, label: d.department_name, schoolId: d.school_id }));
+
+                    this.halls.forEach(hall => {
+                        let primaryOwner = 'Administration';
+                        let secondaryOwner = hall.section || '';
+                        let incharge_name = 'N/A', incharge_email = 'N/A', incharge_contact_number = 'N/A';
+
+                        if (hall.department_id && departmentMap.has(hall.department_id)) {
+                            const dept = departmentMap.get(hall.department_id);
+                            secondaryOwner = dept.department_name;
+                            incharge_name = dept.incharge_name;
+                            incharge_email = dept.incharge_email;
+                            incharge_contact_number = dept.incharge_contact_number;
+                            if (dept.school_id && schoolMap.has(dept.school_id)) {
+                                primaryOwner = schoolMap.get(dept.school_id).school_name;
+                            }
+                        } else if (hall.school_id && schoolMap.has(hall.school_id)) {
+                            const school = schoolMap.get(hall.school_id);
+                            primaryOwner = school.school_name;
+                            secondaryOwner = '';
+                            incharge_name = school.incharge_name;
+                            incharge_email = school.incharge_email;
+                            incharge_contact_number = school.incharge_contact_number;
+                        }
+                        
+                        hall.primaryOwner = primaryOwner;
+                        hall.secondaryOwner = secondaryOwner;
+                        hall.incharge_name = incharge_name;
+                        hall.incharge_email = incharge_email;
+                        hall.incharge_contact_number = incharge_contact_number;
+                    });
+
+                } catch (error) {
+                    this.errorMessage = `An error occurred: ${error.message}. Please try again later.`;
+                    console.error('Error loading data:', error);
+                    this.isLoading = false;
+                }
+            },
+
+            toggleItemSelection(itemId) {
+                if (this.multipleSelectionEnabled) {
+                    const index = this.selectedItems.indexOf(itemId);
+                    if (index === -1) this.selectedItems.push(itemId);
+                    else this.selectedItems.splice(index, 1);
+                } else {
+                    this.selectedItems = this.selectedItems.includes(itemId) ? [] : [itemId];
+                }
+            },
+            
+            modifySelectedItem() {
+                if (this.selectedItems.length !== 1) return;
+                const id = this.selectedItems[0];
+                window.location.href = `modifyHall.html?id=${id}`;
+            },
+
+            confirmDeletion() {
+                if (this.selectedItems.length > 0) {
+                    this.modals.confirmDelete = true;
+                }
+            },
+
+            async deleteSelectedItems() {
+                this.modals.confirmDelete = false;
+                const endpoint = 'https://hall-management.nirmaljyotib.workers.dev/api/hall';
+
+                const promises = this.selectedItems.map(id => 
+                    fetch(`${endpoint}/${id}`, { method: 'DELETE' })
+                );
+
+                try {
+                    const responses = await Promise.all(promises);
+                    const failedResponses = responses.filter(res => !res.ok);
+
+                    if (failedResponses.length > 0) {
+                        let errorMsg = `Server responded with status ${failedResponses[0].status}.`;
+                        try {
+                            const errorJson = await failedResponses[0].json();
+                            errorMsg = errorJson.message || JSON.stringify(errorJson);
+                        } catch (e) { /* Ignore if response is not JSON */ }
+                        throw new Error(`${failedResponses.length} of ${this.selectedItems.length} deletions failed. ${errorMsg}`);
+                    }
+                    
+                    this.showNotification(true, 'Success', `${this.selectedItems.length} item(s) deleted successfully.`);
+                    this.selectedItems = [];
+                    await this.loadData();
+                    
+                } catch (error) {
+                    console.error('Deletion error:', error);
+                    this.showNotification(false, 'Deletion Failed', error.message);
+                }
+            },
+
+            showNotification(success, title, message) {
+                this.notification.success = success;
+                this.notification.title = title;
+                this.notification.message = message;
+                this.notification.show = true;
+                setTimeout(() => this.notification.show = false, 5000);
+            }
+        }));
+    });
+    </script>
+    <script src="layout.js"></script>
+</body>
+</html>
