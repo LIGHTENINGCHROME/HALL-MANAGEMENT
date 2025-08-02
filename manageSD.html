@@ -414,7 +414,7 @@
                 if (this.selectedItems.length !== 1) return;
                 const id = this.selectedItems[0];
                 const type = this.activeView === 'schools' ? 'school' : 'department';
-                window.location.href = `https://example.com/modifySD.html?id=${id}&type=${type}`;
+                window.location.href = `modifySD.html?id=${id}&type=${type}`;
             },
             confirmDeletion() {
                 if (this.selectedItems.length > 0) {

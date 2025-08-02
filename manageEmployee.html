@@ -266,7 +266,7 @@
             },
  
 
-            
+
             async fetchWithAuth(url, options = {}) {
                 const headers = this.getAuthHeaders();
                 if (!headers) {
@@ -480,7 +480,7 @@
             modifySelectedItem() {
                 if (this.selectedItems.length !== 1) return;
                 const id = this.selectedItems[0];
-                window.location.href = `https://example.com/modifyEmployee.html?id=${id}`;
+                window.location.href = `modifyEmployee.html?id=${id}`;
             },
 
             confirmDeletion() {

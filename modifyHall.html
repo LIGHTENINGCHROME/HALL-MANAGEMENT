@@ -144,7 +144,7 @@
                     this.show = false; 
                     if (this.isSuccess) {
                         // Redirect on success
-                        window.location.href = 'https://example.com/manageHall.html'; // Use absolute path
+                        window.location.href = 'manageHall.html'; // Use absolute path
                     }
                 }
             });
@@ -376,6 +376,7 @@
                             throw new Error(result.message || `HTTP error! ${response.status}`);
                         }
                         Alpine.store('modal').open(true, 'Hall updated successfully!');
+                        window.location.replace('manageHall.html');
                     } catch (error) {
                         Alpine.store('modal').open(false, `Failed to update hall. ${error.message}`);
                     }

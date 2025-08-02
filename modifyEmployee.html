@@ -130,7 +130,7 @@
             close() { 
                 this.show = false;
                 if (this.isSuccess) {
-                    window.location.href = 'https://example.com/manageEmployee.html'; // Absolute path
+                    window.location.href = 'manageEmployee.html'; // Absolute path
                 }
             }
         });
@@ -164,7 +164,7 @@
                 };
             },
 
-            
+
             async fetchWithAuth(url, options = {}) {
                 const headers = this.getAuthHeaders();
                 if (!headers) {

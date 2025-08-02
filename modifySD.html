@@ -160,10 +160,7 @@
                         'Authorization': `Bearer ${token}`
                     };
                 },
-                logout() {
-                    localStorage.removeItem('authToken');
-                    window.location.href = 'https://example.com/login.html';
-                },
+
                 async fetchWithAuth(url, options = {}) {
                     const headers = this.getAuthHeaders();
                     if (!headers) {
@@ -260,7 +257,7 @@
                 closeNotification() {
                     this.showNotification = false;
                     if (this.notificationSuccess) {
-                        window.location.href = 'https://example.com/manageSD.html'; // Absolute path
+                        window.location.href = 'manageSD.html'; // Absolute path
                     }
                 },
 
