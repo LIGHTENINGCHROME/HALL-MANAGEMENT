@@ -118,15 +118,20 @@
     <!-- Login Card Container -->
     <div class="login-card">
         <h2 class="login-title">Login</h2>
+        
+        <!-- Login Form -->
+        <form id="loginForm" style="width: 100%;">
+            <!-- Email Input Field -->
+            <label for="email" class="sr-only">Email</label>
+            <input type="email" id="email" placeholder="EMAIL" class="input-field" required>
 
-        <!-- Email Input Field -->
-        <input type="email" id="email" placeholder="EMAIL" class="input-field">
+            <!-- Password Input Field -->
+            <label for="password" class="sr-only">Password</label>
+            <input type="password" id="password" placeholder="PASSWORD" class="input-field" required>
 
-        <!-- Password Input Field -->
-        <input type="password" id="password" placeholder="PASSWORD" class="input-field">
-
-        <!-- Login Button -->
-        <button id="loginBtn" class="login-button">Login</button>
+            <!-- Login Button -->
+            <button type="submit" id="loginBtn" class="login-button">Login</button>
+        </form>
 
         <!-- Message Display Area (for success/error feedback) -->
         <div id="messageArea" class="message"></div>
@@ -136,130 +141,90 @@
     </div>
 
     <script>
-        /*
-         * IMPORTANT: Troubleshooting "Failed to fetch" Error
-         *
-         * The error "TypeError: Failed to fetch" in the browser console,
-         * especially when your `curl` command to the same URL works,
-         * is almost always caused by a **CORS (Cross-Origin Resource Sharing) policy**
-         * blocking the request in the browser.
-         *
-         * This is a browser security mechanism. Your frontend (e.g., file:// or http://localhost:port)
-         * is on a different "origin" than your backend API (https://hall-management.nirmaljyotib.workers.dev/).
-         * Browsers block cross-origin requests by default unless the *server* explicitly allows them.
-         *
-         * The frontend code in this HTML file is correctly attempting the fetch request.
-         * No further changes are needed in this frontend code to resolve the "Failed to fetch" error.
-         *
-         * SOLUTION:
-         * You MUST configure your Cloudflare Worker backend to send the correct CORS headers
-         * in its responses (for both OPTIONS preflight requests and actual GET/POST responses).
-         *
-         * Refer to the Cloudflare Worker CORS configuration example provided previously.
-         * Ensure your Worker's JavaScript code includes headers like:
-         * 'Access-Control-Allow-Origin': 'YOUR_FRONTEND_ORIGIN' (e.g., 'http://localhost:3000' or '*' for testing)
-         * 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-         * 'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-         * 'Access-Control-Allow-Credentials': 'true' (if using cookies/sessions)
-         *
-         * The fix is NOT in this HTML file, but on your backend server.
-         */
+        // Get references to the DOM elements
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const messageArea = document.getElementById('messageArea');
+        const loginButton = document.getElementById('loginBtn');
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Get references to DOM elements
-            const loginBtn = document.getElementById('loginBtn');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const messageArea = document.getElementById('messageArea');
+        // Add an event listener to the form for the submit event
+        loginForm.addEventListener('submit', async (event) => {
+            // Prevent the default form submission behavior (which reloads the page)
+            event.preventDefault();
 
-            // Define your API endpoint for login and the dashboard URL
-            // Using POST is the secure and recommended method for login.
-            const LOGIN_API_URL = 'https://hall-management.nirmaljyotib.workers.dev/auth/login';
-            const DASHBOARD_URL = 'dashboard.html'; // Path to your dashboard page
+            // Get the values from the input fields
+            const email = emailInput.value;
+            const password = passwordInput.value;
 
-            /**
-             * Displays a message in the message area.
-             * @param {string} msg - The message text to display.
-             * @param {'success'|'error'} type - The type of message ('success' or 'error') for styling.
-             */
-            function showMessage(msg, type) {
-                messageArea.textContent = msg;
-                messageArea.className = `message ${type}`; // Apply dynamic class for styling
-                messageArea.style.display = 'block'; // Make the message area visible
+            // Basic validation: check if fields are empty
+            if (!email || !password) {
+                displayMessage('Please enter both email and password.', 'error');
+                return;
             }
 
-            /**
-             * Hides the message area and clears its content.
-             */
-            function hideMessage() {
-                messageArea.style.display = 'none'; // Hide the message area
-                messageArea.textContent = '';
-                messageArea.className = 'message'; // Reset classes
-            }
+            // Change button text to show loading state
+            loginButton.textContent = 'Logging in...';
+            loginButton.disabled = true;
 
-            // Add event listener to the login button
-            loginBtn.addEventListener('click', async function() {
-                const email = emailInput.value.trim(); // Get email and trim whitespace
-                const password = passwordInput.value.trim(); // Get password and trim whitespace
+            try {
+                // API endpoint URL
+                const apiUrl = 'https://hall-management.nirmaljyotib.workers.dev/auth/login';
 
-                hideMessage(); // Clear any previous messages
+                // Send a POST request to the API using fetch
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password }),
+                });
 
-                // Basic client-side validation: ensure fields are not empty
-                if (!email || !password) {
-                    showMessage('Please enter both email and password.', 'error');
-                    return; // Stop execution if validation fails
-                }
+                // Parse the JSON response from the server
+                const data = await response.json();
 
-                console.log('Attempting login with:', { email, password });
-
-                try {
-                    // Send a POST request to the login API (securely recommended)
-                    const response = await fetch(LOGIN_API_URL, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json' // Indicate JSON body
-                        },
-                        body: JSON.stringify({ email, password }) // Convert data to JSON string
-                    });
-
-                    // Parse the JSON response from the server
-                    // This will throw an error if the response is not valid JSON,
-                    // which will be caught by the catch block.
-                    const data = await response.json();
-
-                    console.log('API Response Status:', response.status);
-                    console.log('API Response Data:', data);
-
-                    // Check if the HTTP status code is in the 2xx range (success)
-                    // And check if the 'token' property exists in the response data
-                    if (response.ok && data.token) { // Modified condition: check for response.ok AND data.token
-                        showMessage(data.message || 'Login successful!', 'success'); // Display success message
-                        localStorage.setItem('authToken', data.token); // Store token in localStorage
-                        console.log('Auth Token received and stored.');
-                        
-                        // Redirect to the dashboard after a short delay for user to see message
-                        console.log('Login successful, redirecting to dashboard...');
+                // Check if the request was successful
+                if (response.ok) {
+                    // Assuming the token is in data.token
+                    const token = data.token;
+                    if (token) {
+                        // Securely save the token to localStorage
+                        localStorage.setItem('authToken', token);
+                        displayMessage('Login successful! Redirecting...', 'success');
                         setTimeout(() => {
-                            window.location.replace(DASHBOARD_URL); // Using replace for cleaner history
-                        }, 1000); // 1 second delay
+                            if (data.role=="ADMIN"){
+                            window.location.replace("../index.html");
+                        };
+                        }, 1000);
+
                     } else {
-                        // This block will be hit if:
-                        // 1. response.ok is false (e.g., 401, 500)
-                        // 2. response.ok is true, but data.token is not present (e.g., custom backend error without token)
-                        console.log('Login failed: Invalid response or missing token.');
-                        showMessage(data.message || `Error: ${response.statusText || 'Unknown authentication error'}`, 'error');
-                        console.error('Server error response or missing token:', data);
+                        displayMessage('Login successful, but no token received.', 'error');
                     }
-                } catch (error) {
-                    // This catch block will be hit for network errors (e.g., server unreachable, DNS issues, CORS issues),
-                    // or if response.json() fails because the response body is not valid JSON.
-                    console.error('Network or parsing error during login:', error);
-                    // Display a user-friendly message for connection issues.
-                    // The "Failed to fetch" error specifically indicates a network problem or a browser security block (like CORS).
-                    showMessage('Could not connect to the server. This is often due to a CORS issue. Please ensure your backend (Cloudflare Worker) is configured to allow requests from your frontend\'s origin.', 'error');
+                } else {
+                    // Handle errors (e.g., invalid credentials)
+                    // The error message is expected in data.message or data.error
+                    const errorMessage = data.message || data.error || 'An unknown error occurred.';
+                    displayMessage(errorMessage, 'error');
                 }
-            });
+            } catch (error) {
+                // Handle network errors or other exceptions
+                console.error('Login failed:', error);
+                displayMessage('Login failed. Please check your connection.', 'error');
+            } finally {
+                // Re-enable the button and restore its text
+                loginButton.textContent = 'Login';
+                loginButton.disabled = false;
+            }
         });
+
+        // Helper function to display messages to the user
+        function displayMessage(message, type) {
+            messageArea.textContent = message;
+            // Set the class to 'message success' or 'message error'
+            messageArea.className = `message ${type}`;
+            // Make the message area visible
+            messageArea.style.display = 'block';
+        }
     </script>
 </body>
 </html>

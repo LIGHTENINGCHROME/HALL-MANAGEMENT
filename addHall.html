@@ -31,16 +31,13 @@
             padding-right: 2.5rem;
         }
         [x-cloak] { display: none !important; }
-        .focused-option {
-            background-color: #E0E7FF; /* indigo-100 */
-        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="min-h-screen flex flex-col">
 
-      <div id="header-placeholder"></div>
-  <div id="nav-placeholder"></div>
+    <div id="header-placeholder"></div>
+    <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6">
         <div class="container mx-auto max-w-3xl" x-data="addHallForm">
@@ -115,7 +112,7 @@
 
                     <div class="flex justify-end space-x-4 pt-6">
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">SUBMIT</button>
-                        <button type="reset" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">CLEAR</button>
+                        <button type="reset" @click="resetForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">CLEAR</button>
                     </div>
                 </form>
             </div>
@@ -149,8 +146,9 @@
                 close() { this.show = false; }
             });
 
-            const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-            const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
+            const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool;
+            const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept;
+            
             Alpine.data('addHallForm', () => ({
                 hallType: '', selectedFeatures: [], selectedBelongsTo: '',
                 selectedSchoolId: null, selectedDepartmentId: null, selectedDeptSchoolId: null, selectedGeneralOptionId: null,
@@ -162,7 +160,26 @@
                 schoolOptions: [], departmentOptions: [],
                 generalOptions: [ { value: 'ENGINEERING_WING', label: 'Engineering Wing' }, { value: 'EXAMINATION_WING', label: 'Examination Wing' }, { value: 'LIBRARY', label: 'Library' }, { value: 'GUEST_HOUSE', label: 'Guest House' } ],
                 
-                init() { this.fetchSchools(); this.fetchDepartments(); },
+                // --- AUTHENTICATION LOGIC ---
+                getAuthHeaders() {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) return null;
+                    return {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+                },
+
+                init() {
+                    const headers = this.getAuthHeaders();
+                    if (!headers) {
+                        console.error("No auth token found. Redirecting to login.");
+                        logout();
+                        return; // Stop initialization if not authenticated
+                    }
+                    this.fetchSchools(); 
+                    this.fetchDepartments(); 
+                },
 
                 get filteredSchools() { return this.schoolOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.school.toLowerCase())); },
                 get filteredDeptSchools() { return this.schoolOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.deptSchool.toLowerCase())); },
@@ -173,8 +190,43 @@
                 },
                 get filteredGeneral() { return this.generalOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.general.toLowerCase())); },
 
-                async fetchSchools() { this.isLoading.schools = true; try { const r = await fetch(urlsch); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.schoolOptions = d.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); } catch (e) { Alpine.store('modal').open(false, 'Could not load school data.'); } finally { this.isLoading.schools = false; } },
-                async fetchDepartments() { this.isLoading.departments = true; try { const r = await fetch(urldept); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.departmentOptions = d.filter(t => t && t.unique_id && t.department_name && t.school_id).map(t => ({ value: t.unique_id, label: t.department_name, schoolId: t.school_id })); } catch (e) { Alpine.store('modal').open(false, 'Could not load department data.'); } finally { this.isLoading.departments = false; } },
+                async fetchWithAuth(url) {
+                    const headers = this.getAuthHeaders();
+                    if (!headers) {
+                        this.logout();
+                        throw new Error('User not authenticated');
+                    }
+                    const response = await fetch(url, { headers });
+                    if (response.status === 401) {
+                        this.logout();
+                        throw new Error('Authentication failed');
+                    }
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                },
+
+                async fetchSchools() { 
+                    this.isLoading.schools = true; 
+                    try { 
+                        const data = await this.fetchWithAuth(urlsch);
+                        this.schoolOptions = data.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); 
+                    } catch (e) { 
+                        Alpine.store('modal').open(false, `Could not load school data: ${e.message}`); 
+                    } finally { 
+                        this.isLoading.schools = false; 
+                    } 
+                },
+                async fetchDepartments() { 
+                    this.isLoading.departments = true; 
+                    try { 
+                        const data = await this.fetchWithAuth(urldept);
+                        this.departmentOptions = data.filter(t => t && t.unique_id && t.department_name && t.school_id).map(t => ({ value: t.unique_id, label: t.department_name, schoolId: t.school_id })); 
+                    } catch (e) { 
+                        Alpine.store('modal').open(false, `Could not load department data: ${e.message}`); 
+                    } finally { 
+                        this.isLoading.departments = false; 
+                    } 
+                },
                 
                 getLabelById(options, id) { const option = options.find(o => o.value === id); return option ? option.label : null; },
                 toggleDropdown(key) { this.dropdowns[key] = !this.dropdowns[key]; },
@@ -209,7 +261,6 @@
                     this.searchTerms = { school: '', department: '', deptSchool: '', general: '' };
                     this.isAvailable = 'yes';
                     this.unavailabilityReason = '';
-                    document.getElementById('addHallForm').reset();
                 },
 
                 async submitForm() {
@@ -249,9 +300,21 @@
                     
                     console.log('Sending Payload:', JSON.stringify(payload, null, 2));
 
+                    const headers = this.getAuthHeaders();
+                    if (!headers) {
+                        this.logout();
+                        return;
+                    }
+
                     try {
                         const url = AppConfig.apiBaseUrl + AppConfig.endpoints.addHall
-                        const response = await fetch(url,{ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        const response = await fetch(url,{ method: 'POST', headers, body: JSON.stringify(payload) });
+                        
+                        if (response.status === 401) {
+                            this.logout();
+                            return;
+                        }
+
                         const result = await response.json();
                         if (!response.ok) { 
                             throw new Error(result.message || `HTTP error! ${response.status}`);

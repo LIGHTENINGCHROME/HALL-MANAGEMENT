@@ -36,7 +36,7 @@
 <body class="min-h-screen flex flex-col">
 
       <div id="header-placeholder"></div>
-  <div id="nav-placeholder"></div>
+      <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6 flex items-center justify-center">
         <div class="container mx-auto max-w-2xl" x-data="employeeForm">
@@ -123,11 +123,6 @@
     </div>
 
     <script>
-    const urlempcreat = AppConfig.apiBaseUrl + AppConfig.endpoints.addemp
-    const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-    const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
-
-
     document.addEventListener('alpine:init', () => {
         Alpine.store('modal', {
             show: false,
@@ -170,7 +165,39 @@
                 { value: 'GUEST_HOUSE', label: 'Guest House' } 
             ],
 
+            // --- AUTHENTICATION LOGIC ---
+            getAuthHeaders() {
+                const token = localStorage.getItem('authToken');
+                if (!token) return null;
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+            },
+
+            
+            async fetchWithAuth(url, options = {}) {
+                const headers = this.getAuthHeaders();
+                if (!headers) {
+                    logout();
+                    throw new Error('User not authenticated');
+                }
+                const config = { ...options, headers: {...headers, ...options.headers} };
+                const response = await fetch(url, config);
+                if (response.status === 401) {
+                    logout();
+                    throw new Error('Authentication failed');
+                }
+                return response;
+            },
+            // --- END AUTHENTICATION LOGIC ---
+
             init() {
+                if (!this.getAuthHeaders()) {
+                    Alpine.store('modal').open(false, 'You are not logged in. Redirecting...');
+                    logout();
+                    return;
+                }
                 this.fetchSchools();
                 this.fetchDepartments();
                 this.$watch('selectedBelongsTo', () => this.resetSelections());
@@ -192,8 +219,32 @@
             get filteredSections() { return this.sectionOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.section.toLowerCase())); },
             get filteredDesignations() { return this.designationOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.designation.toLowerCase())); },
             
-            async fetchSchools() { this.isLoading.schools = true; try { const r = await fetch(urlsch); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.schoolOptions = d.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); } catch (e) { Alpine.store('modal').open(false, 'Could not load school data.'); } finally { this.isLoading.schools = false; } },
-            async fetchDepartments() { this.isLoading.departments = true; try { const r = await fetch(urldept); if (!r.ok) throw new Error('Network error'); const d = await r.json(); this.departmentOptions = d.filter(t => t && t.unique_id && t.department_name && t.school_id).map(t => ({ value: t.unique_id, label: t.department_name, schoolId: t.school_id })); } catch (e) { Alpine.store('modal').open(false, 'Could not load department data.'); } finally { this.isLoading.departments = false; } },
+            async fetchSchools() { 
+                this.isLoading.schools = true; 
+                try { 
+                    const response = await this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.allschool);
+                    if (!response.ok) throw new Error('Network error'); 
+                    const d = await response.json(); 
+                    this.schoolOptions = d.filter(s => s && s.unique_id && s.school_name).map(s => ({ value: s.unique_id, label: s.school_name })); 
+                } catch (e) { 
+                    Alpine.store('modal').open(false, `Could not load school data: ${e.message}`); 
+                } finally { 
+                    this.isLoading.schools = false; 
+                } 
+            },
+            async fetchDepartments() { 
+                this.isLoading.departments = true; 
+                try { 
+                    const response = await this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.alldept);
+                    if (!response.ok) throw new Error('Network error'); 
+                    const d = await response.json(); 
+                    this.departmentOptions = d.filter(t => t && t.unique_id && t.department_name && t.school_id).map(t => ({ value: t.unique_id, label: t.department_name, schoolId: t.school_id })); 
+                } catch (e) { 
+                    Alpine.store('modal').open(false, `Could not load department data: ${e.message}`); 
+                } finally { 
+                    this.isLoading.departments = false; 
+                } 
+            },
             
             getLabelById(options, id) { const option = options.find(o => o.value === id); return option ? option.label : null; },
             
@@ -212,8 +263,6 @@
                 this.dropdowns[type] = false;
             },
 
-            // MODIFIED: This function now ONLY resets fields that are dependent on the "Belongs To" dropdown.
-            // It will no longer reset the Designation field.
             resetSelections() {
                 this.selectedSchoolId = null; 
                 this.selectedDepartmentId = null; 
@@ -226,14 +275,11 @@
                 this.searchTerms.section = '';
             },
 
-            // MODIFIED: This function now performs a FULL reset of all fields for the "CLEAR" button.
             resetForm() {
                 document.getElementById('addEmployeeForm').reset();
                 this.selectedBelongsTo = 'administration';
                 this.contactNumber = '';
-                this.resetSelections(); // Resets dependent fields
-                
-                // Explicitly reset designation fields for a full clear
+                this.resetSelections();
                 this.selectedDesignationId = null; 
                 this.searchTerms.designation = '';
             },
@@ -279,7 +325,11 @@
                 console.log('Sending Payload:', JSON.stringify(payload, null, 2));
 
                 try {
-                    const response = await fetch(urlempcreat, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    const response = await this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.addemp, { 
+                        method: 'POST', 
+                        body: JSON.stringify(payload) 
+                    });
+
                     if (!response.ok) {
                         const errorText = await response.text();
                         try {

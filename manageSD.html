@@ -40,7 +40,7 @@
 <body class="min-h-screen flex flex-col">
 
     <div id="header-placeholder"></div>
-  <div id="nav-placeholder"></div>
+    <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6">
         <div class="container mx-auto" x-data="manageS_D">
@@ -233,11 +233,6 @@
     </footer>
     
     <script>
-    // Full script with all functions implemented
-    const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-    const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
-    const base = AppConfig.apiBaseUrl
-
     document.addEventListener('alpine:init', () => {
         Alpine.data('manageS_D', () => ({
             schools: [],
@@ -256,7 +251,39 @@
             },
             sort: { key: 'date', direction: 'desc' },
 
+            // --- AUTHENTICATION LOGIC ---
+            getAuthHeaders() {
+                const token = localStorage.getItem('authToken');
+                if (!token) return null;
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+            },
+
+            async fetchWithAuth(url, options = {}) {
+                const headers = this.getAuthHeaders();
+                if (!headers) {
+                    logout();
+                    throw new Error('User not authenticated');
+                }
+                const config = { ...options, headers: {...headers, ...options.headers} };
+                const response = await fetch(url, config);
+                if (response.status === 401) {
+                    logout();
+                    throw new Error('Authentication failed');
+                }
+                return response;
+            },
+            // --- END AUTHENTICATION LOGIC ---
+
             init() { 
+                if (!this.getAuthHeaders()) {
+                    this.errorMessage = 'You are not logged in. Redirecting...';
+                    this.isLoading = false;
+                    logout();
+                    return;
+                }
                 this.loadData(); 
                 this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); 
                 this.$watch('activeView', () => { 
@@ -356,7 +383,10 @@
                 this.isLoading = true;
                 this.errorMessage = '';
                 try {
-                    const [schoolResponse, departmentResponse] = await Promise.all([ fetch(urlsch), fetch(urldept) ]);
+                    const [schoolResponse, departmentResponse] = await Promise.all([
+                        this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.allschool),
+                        this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.alldept)
+                    ]);
                     if (!schoolResponse.ok) throw new Error(`Schools API Error: ${schoolResponse.statusText}`);
                     if (!departmentResponse.ok) throw new Error(`Departments API Error: ${departmentResponse.statusText}`);
                     const schoolsData = await schoolResponse.json();
@@ -384,7 +414,7 @@
                 if (this.selectedItems.length !== 1) return;
                 const id = this.selectedItems[0];
                 const type = this.activeView === 'schools' ? 'school' : 'department';
-                window.location.href = `modifySD.html?id=${id}&type=${type}`;
+                window.location.href = `https://example.com/modifySD.html?id=${id}&type=${type}`;
             },
             confirmDeletion() {
                 if (this.selectedItems.length > 0) {
@@ -394,8 +424,10 @@
             async deleteSelectedItems() {
                 this.modals.confirmDelete = false;
                 const type = this.activeView === 'schools' ? 'school' : 'department';
-                const endpoint = `${base}/${type}`;
-                const promises = this.selectedItems.map(id => fetch(`${endpoint}/${id}`, { method: 'DELETE' }));
+                const endpoint = `${AppConfig.apiBaseUrl}/${type}`;
+                const promises = this.selectedItems.map(id => 
+                    this.fetchWithAuth(`${endpoint}/${id}`, { method: 'DELETE' })
+                );
                 try {
                     const responses = await Promise.all(promises);
                     const failed = responses.filter(res => !res.ok);

@@ -37,8 +37,8 @@
 <body class="min-h-screen flex flex-col">
 
      <!-- Placeholders for centralized header and navigation -->
-  <div id="header-placeholder"></div>
-  <div id="nav-placeholder"></div>
+    <div id="header-placeholder"></div>
+    <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6 flex items-center justify-center">
         <div class="container mx-auto max-w-2xl" x-data="schoolDeptForm">
@@ -115,10 +115,6 @@
     </div>
 
     <script>
-        const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-        const urlAddSch = AppConfig.apiBaseUrl + AppConfig.endpoints.addschool
-        const urlAddDept = AppConfig.apiBaseUrl + AppConfig.endpoints.addDept
-    
         document.addEventListener('alpine:init', () => {
             Alpine.store('modal', {
                 show: false,
@@ -147,7 +143,41 @@
                 deanStatus: 'PERMANENT',
                 hodStatus: 'PERMANENT',
 
+                // --- AUTHENTICATION LOGIC ---
+                getAuthHeaders() {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) return null;
+                    return {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+                },
+
+                async fetchWithAuth(url, options = {}) {
+                    const headers = this.getAuthHeaders();
+                    if (!headers) {
+                        logout();
+                        throw new Error('User not authenticated');
+                    }
+                    
+                    const config = { ...options, headers: {...headers, ...options.headers} };
+                    const response = await fetch(url, config);
+
+                    if (response.status === 401) {
+                        logout();
+                        throw new Error('Authentication failed');
+                    }
+                    return response;
+                },
+                // --- END AUTHENTICATION LOGIC ---
+
                 init() {
+                    // Auth check on initialization
+                    if (!this.getAuthHeaders()) {
+                        console.error("No auth token found. Redirecting to login.");
+                        logout();
+                        return;
+                    }
                     this.fetchSchools();
                     this.$watch('type', () => this.resetForm());
                 },
@@ -174,7 +204,7 @@
 
                 async fetchSchools() {
                     try {
-                        const response = await fetch(urlsch);
+                        const response = await this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.allschool);
                         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                         const data = await response.json();
                         this.schoolOptions = data.map(school => ({ value: school.unique_id, label: school.school_name }));
@@ -215,7 +245,7 @@
                     let endpoint = '';
 
                     if (this.type === 'school') {
-                        endpoint = urlAddSch;
+                        endpoint = AppConfig.apiBaseUrl + AppConfig.endpoints.addschool;
                         data.school_name = formData.get('school_name');
                         data.incharge_name = formData.get('incharge_name_school');
                         data.incharge_contact_number = this.deanContactNumber;
@@ -223,7 +253,7 @@
                         data.incharge_intercom = this.deanIntercom;
                         data.incharge_status = this.deanStatus;
                     } else {
-                        endpoint = urlAddDept;
+                        endpoint = AppConfig.apiBaseUrl + AppConfig.endpoints.addDept;
                         data.department_name = formData.get('department_name');
                         data.school_id = this.selectedSchoolId;
                         data.incharge_name = formData.get('incharge_name_dept');
@@ -234,11 +264,11 @@
                     }
 
                     try {
-                        const response = await fetch(endpoint, { 
+                        const response = await this.fetchWithAuth(endpoint, { 
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
+                        
                         const result = await response.json();
                         if (response.ok) {
                             Alpine.store('modal').open(true, 'Entry added successfully!');
@@ -248,7 +278,7 @@
                             Alpine.store('modal').open(false, `Entry not added. Reason: ${result.message || 'Unknown error'}`);
                         }
                     } catch (error) {
-                        Alpine.store('modal').open(false, 'Network error. Please check your connection.');
+                        Alpine.store('modal').open(false, `Network error. Please check your connection. ${error.message}`);
                     }
                 }
             }));

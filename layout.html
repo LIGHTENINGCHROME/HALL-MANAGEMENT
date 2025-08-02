@@ -1,5 +1,5 @@
 <!-- This file contains the shared header and navigation for all your pages -->
-
+<script src="config.js"></script>
 <header class="bg-[rgba(0,0,0,0.63)] text-white p-4 shadow-md flex items-center justify-between">
     <div class="flex items-center space-x-4">
         <div class="h-[60px] rounded-full overflow-hidden">
@@ -10,7 +10,7 @@
     <div class="flex items-center space-x-4">
         <span class="text-lg font-medium">ADMIN</span>
         <span class="text-lg">|</span>
-        <a href="#" class="text-lg font-medium hover:underline flex items-center space-x-1">
+        <a onclick="logout()" class="text-lg font-medium hover:underline flex items-center space-x-1">
             <span>LOGOUT</span>
             <i class="fas fa-sign-out-alt"></i>
         </a>

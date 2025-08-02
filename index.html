@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Alpine.js for interactivity -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-    <script src="config.js"></script>
+    <script src="config.js"></script> 
     <style>
         /* Custom styles for Montserrat font */
         body {
@@ -35,9 +35,9 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- Placeholders for centralized header and navigation -->
-  <div id="header-placeholder"></div>
-  <div id="nav-placeholder"></div>
+    <!-- Placeholders for centralized header and navigation -->
+    <div id="header-placeholder"></div>
+    <div id="nav-placeholder"></div>
 
     <!-- Main Content Area -->
     <main class="flex-grow p-6" x-data="dashboardData" x-cloak>
@@ -127,9 +127,9 @@
     </footer>
 
     <script>
-        const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-        const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
-         const urlhalls = AppConfig.apiBaseUrl + AppConfig.endpoints.allHall
+        const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool;
+        const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept;
+        const urlhalls = AppConfig.apiBaseUrl + AppConfig.endpoints.allHall;
 
         document.addEventListener('alpine:init', () => {
             Alpine.data('dashboardData', () => ({
@@ -154,18 +154,46 @@
                         { name: 'Conference', count: this.hallTypes.conferenceHalls, percentage: (this.hallTypes.conferenceHalls / total) * 100, color: 'bg-teal-500' }
                     ];
                 },
+
+                // Helper function to create authorization headers
+                getAuthHeaders() {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                        return null;
+                    }
+                    return {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+                },
                 
                 async init() {
+                    const headers = this.getAuthHeaders();
+                    
+                    // If no token is found, redirect to login page immediately
+                    if (!headers) {
+                        console.error('Authentication token not found. Redirecting to login.');
+                        logout();
+                        return;
+                    }
+
                     try {
                         const [schoolRes, departmentRes, hallRes] = await Promise.all([
-                            fetch(urlsch),
-                            fetch(urldept),
-                            fetch(urlhalls)
+                            fetch(urlsch, { headers }),
+                            fetch(urldept, { headers }),
+                            fetch(urlhalls, { headers })
                         ]);
 
-                        if (!schoolRes.ok) throw new Error('Failed to fetch schools');
-                        if (!departmentRes.ok) throw new Error('Failed to fetch departments');
-                        if (!hallRes.ok) throw new Error('Failed to fetch halls');
+                        // Check for auth errors (401/403)
+                        if (schoolRes.status === 401 || departmentRes.status === 401 || hallRes.status === 401) {
+                            console.error('Authentication failed. Token may be invalid or expired.');
+                            this.logout();
+                            return;
+                        }
+
+                        if (!schoolRes.ok) throw new Error(`Failed to fetch schools: ${schoolRes.statusText}`);
+                        if (!departmentRes.ok) throw new Error(`Failed to fetch departments: ${departmentRes.statusText}`);
+                        if (!hallRes.ok) throw new Error(`Failed to fetch halls: ${hallRes.statusText}`);
 
                         const schools = await schoolRes.json();
                         const departments = await departmentRes.json();
@@ -193,6 +221,6 @@
     </script>
     
     <!-- Script to load the centralized layout -->
-    <script src="layout.js"></script>
+    <script src="layout.js"></script> 
 </body>
 </html>

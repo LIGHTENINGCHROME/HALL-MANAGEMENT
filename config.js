@@ -5,6 +5,10 @@
 // To use a link in any HTML file, make sure to include this script first.
 // Example usage in your JS: AppConfig.apiBaseUrl + AppConfig.endpoints.createEmployee
 // =================================================================
+function logout(){
+    localStorage.removeItem('authToken');
+    window.location.href = AppConfig.links.login; // Adjust to your login page path
+}
 
 const AppConfig = {
     // Base URL for your API. All endpoint URLs will be appended to this.
@@ -24,4 +28,9 @@ const AppConfig = {
         addemp: '/employee/create'
         // Add other API endpoints here, e.g., deleteEmployee: '/employee/delete'
     },
+
+    links: {
+        login: 'public/login.html'
+    }
 };
+

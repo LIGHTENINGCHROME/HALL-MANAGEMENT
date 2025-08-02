@@ -19,8 +19,9 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-  <!-- Placeholders for centralized header and navigation -->
-  <div id="header-placeholder"></div>
+    <!-- Placeholders for centralized header and navigation -->
+    <div id="header-placeholder"></div>
+    <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6">
         <div class="container mx-auto bg-[rgba(0,0,0,0.15)] p-8 rounded-lg shadow-xl" x-data="modifyForm">
@@ -71,7 +72,7 @@
                 </div>
 
                 <div class="flex justify-end space-x-4 pt-4">
-                    <button type="button" @click="window.location.href='manageSD.html'" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-md shadow-lg">Cancel</button>
+                    <button type="button" @click="window.location.href='https://example.com/manageSD.html'" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-md shadow-lg">Cancel</button>
                     <button type="submit" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-md shadow-lg">Save Changes</button>
                 </div>
             </form>
@@ -130,8 +131,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
-        const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-        const base = AppConfig.apiBaseUrl
         document.addEventListener('alpine:init', () => {
             Alpine.data('modifyForm', () => ({
                 type: '',
@@ -152,7 +151,43 @@
                 notificationMessage: '',
                 notificationSuccess: false,
 
+                // --- AUTHENTICATION LOGIC ---
+                getAuthHeaders() {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) return null;
+                    return {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    };
+                },
+                logout() {
+                    localStorage.removeItem('authToken');
+                    window.location.href = 'https://example.com/login.html';
+                },
+                async fetchWithAuth(url, options = {}) {
+                    const headers = this.getAuthHeaders();
+                    if (!headers) {
+                        logout();
+                        throw new Error('User not authenticated');
+                    }
+                    const config = { ...options, headers: {...headers, ...options.headers} };
+                    const response = await fetch(url, config);
+                    if (response.status === 401) {
+                        logout();
+                        throw new Error('Authentication failed');
+                    }
+                    return response;
+                },
+                // --- END AUTHENTICATION LOGIC ---
+
                 async init() {
+                    if (!this.getAuthHeaders()) {
+                        this.errorMessage = 'You are not logged in. Redirecting...';
+                        this.isLoading = false;
+                        logout();
+                        return;
+                    }
+
                     const params = new URLSearchParams(window.location.search);
                     this.type = params.get('type');
                     this.id = params.get('id');
@@ -171,7 +206,7 @@
 
                 async fetchSchools() {
                     try {
-                        const response = await fetch(urlsch);
+                        const response = await this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.allschool);
                         if (!response.ok) throw new Error('Could not load schools');
                         const data = await response.json();
                         this.schools = (Array.isArray(data) ? data : data.schools || data.data || []).filter(s => s && s.unique_id && s.school_name);
@@ -182,15 +217,16 @@
 
                 async fetchDetails() {
                     this.isLoading = true;
-                    const endpoint = this.type === 'school' ? 'all-schools' : 'all-department';
-                    const listUrl = `${base}/${this.type}/${endpoint}`;
+                    const listUrl = this.type === 'school' 
+                        ? AppConfig.apiBaseUrl + AppConfig.endpoints.allschool 
+                        : AppConfig.apiBaseUrl + AppConfig.endpoints.alldept;
+                    
                     try {
-                        const response = await fetch(listUrl);
+                        const response = await this.fetchWithAuth(listUrl);
                         if (!response.ok) throw new Error('Could not fetch item details.');
                         const data = await response.json();
 
-                        const listKey = this.type === 'school' ? 'schools' : 'departments';
-                        const list = Array.isArray(data) ? data : data[listKey] || data.data || [];
+                        const list = Array.isArray(data) ? data : (data.schools || data.departments || data.data || []);
                         const item = list.find(d => d.unique_id === this.id);
 
                         if (!item) throw new Error('Item not found.');
@@ -224,12 +260,12 @@
                 closeNotification() {
                     this.showNotification = false;
                     if (this.notificationSuccess) {
-                        window.location.href = 'manageSD.html';
+                        window.location.href = 'https://example.com/manageSD.html'; // Absolute path
                     }
                 },
 
                 async submitForm() {
-                    const url = `${base}/${this.type}/${this.id}`;
+                    const url = `${AppConfig.apiBaseUrl}/${this.type}/${this.id}`;
                     let payload = {};
 
                     if (this.type === 'school') {
@@ -256,9 +292,8 @@
                     }
 
                     try {
-                        const response = await fetch(url, {
+                        const response = await this.fetchWithAuth(url, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload)
                         });
 

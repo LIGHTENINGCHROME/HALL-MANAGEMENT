@@ -40,7 +40,7 @@
 <body class="min-h-screen flex flex-col">
 
       <div id="header-placeholder"></div>
-  <div id="nav-placeholder"></div>
+      <div id="nav-placeholder"></div>
 
     <main class="flex-grow p-6">
         <div class="container mx-auto" x-data="manageHalls">
@@ -96,6 +96,7 @@
                 </div>
             </div>
 
+            <!-- Filter Modals -->
             <div x-show="modals.hallDetails" @click.away="modals.hallDetails = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg relative">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -210,6 +211,7 @@
                 </div>
             </div>
             
+            <!-- Notification Modal -->
             <div x-show="notification.show" @click.away="notification.show = false" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
                     <div class="flex-shrink-0 mx-auto mb-4">
@@ -313,13 +315,12 @@
             halls: [],
             schoolOptions: [],
             departmentOptions: [],
-            allFeatures: ['AC', 'Audio', 'Black Board', 'Computer', 'Lift', 'Podium', 'Projector', 'Ramp', 'Smart Board', 'White Board', 'WIFI'],
+            allFeatures: ['AC', 'Audio System', 'Black Board', 'Computer', 'Lift', 'Podium', 'Projector', 'Ramp', 'Smart Board', 'White Board', 'WIFI'],
             selectedItems: [],
             multipleSelectionEnabled: false,
             isLoading: true,
             errorMessage: '',
-            viewMode: 'card', // 'card' or 'table'
-            // NEW: Added sortOptionsOpen to modals state
+            viewMode: 'card',
             modals: { hallDetails: false, belongsTo: false, features: false, schoolFilterOpen: false, departmentFilterOpen: false, hallNameOpen: false, status: false, confirmDelete: false, sortOptionsOpen: false },
             notification: { show: false, success: false, title: '', message: '' },
             filters: {
@@ -328,15 +329,48 @@
                 features: [], status: '',
                 schoolSearchTerm: '', departmentSearchTerm: '', nameSearchTerm: ''
             },
-            // NEW: State for sorting
             sort: {
-                key: 'date', // 'date' or 'name'
-                direction: 'desc' // 'asc' or 'desc'
+                key: 'date',
+                direction: 'desc'
             },
 
-            init() { this.loadData(); this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); },
+            // --- AUTHENTICATION LOGIC ---
+            getAuthHeaders() {
+                const token = localStorage.getItem('authToken');
+                if (!token) return null;
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+            },
+            async fetchWithAuth(url, options = {}) {
+                const headers = this.getAuthHeaders();
+                if (!headers) {
+                    logout();
+                    throw new Error('User not authenticated');
+                }
+                
+                const config = { ...options, headers: {...headers, ...options.headers} };
+                const response = await fetch(url, config);
 
-            // MODIFIED: Added sorting logic to the filteredHalls getter
+                if (response.status === 401) {
+                    logout();
+                    throw new Error('Authentication failed');
+                }
+                return response;
+            },
+            // --- END AUTHENTICATION LOGIC ---
+
+            init() { 
+                if (!this.getAuthHeaders()) {
+                    console.error("No auth token found. Redirecting to login.");
+                    logout();
+                    return;
+                }
+                this.loadData(); 
+                this.$watch('multipleSelectionEnabled', (value) => { if (!value) this.selectedItems = []; }); 
+            },
+
             get filteredHalls() {
                 let filtered = this.halls.filter(hall => {
                     const f = this.filters;
@@ -359,14 +393,12 @@
                     return true;
                 });
 
-                // Apply sorting after filtering
                 const direction = this.sort.direction === 'asc' ? 1 : -1;
                 return filtered.sort((a, b) => {
                     if (this.sort.key === 'name') {
                         return a.name.localeCompare(b.name) * direction;
                     }
                     if (this.sort.key === 'date') {
-                        // Ensure created_at exists before creating a date
                         const dateA = a.created_at ? new Date(a.created_at) : 0;
                         const dateB = b.created_at ? new Date(b.created_at) : 0;
                         return (dateA - dateB) * direction;
@@ -408,20 +440,16 @@
                 this.filters = { name: '', type: '', capacity: '', floor: '', zone: '', ownerType: '', schoolId: '', departmentId: '', features: [], status: '', schoolSearchTerm: '', departmentSearchTerm: '', nameSearchTerm: '' };
             },
 
-            // NEW: Method to apply and toggle sorting
             applySort(key) {
                 if (this.sort.key === key) {
-                    // If same key, toggle direction
                     this.sort.direction = this.sort.direction === 'asc' ? 'desc' : 'asc';
                 } else {
-                    // If new key, set it and apply default direction
                     this.sort.key = key;
-                    this.sort.direction = key === 'date' ? 'desc' : 'asc'; // Newest first for date, A-Z for name
+                    this.sort.direction = key === 'date' ? 'desc' : 'asc';
                 }
-                this.modals.sortOptionsOpen = false; // Close dropdown after selection
+                this.modals.sortOptionsOpen = false;
             },
             
-            // NEW: Method to deselect all items
             deselectAll() {
                 this.selectedItems = [];
             },
@@ -477,11 +505,29 @@
                 this.isLoading = true;
                 this.errorMessage = '';
                 try {
-                    const url = AppConfig.apiBaseUrl + AppConfig.endpoints.allHall
-                    const hallResponse = await fetch(url);
+                    const [hallResponse, schoolResponse, departmentResponse] = await Promise.all([
+                        this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.allHall),
+                        this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.allschool),
+                        this.fetchWithAuth(AppConfig.apiBaseUrl + AppConfig.endpoints.alldept)
+                    ]);
+
                     if (!hallResponse.ok) throw new Error(`Halls API Error: ${hallResponse.statusText}`);
+                    if (!schoolResponse.ok) throw new Error(`Schools API Error: ${schoolResponse.statusText}`);
+                    if (!departmentResponse.ok) throw new Error(`Departments API Error: ${departmentResponse.statusText}`);
+
                     const hallData = await hallResponse.json();
+                    const schoolData = await schoolResponse.json();
+                    const departmentData = await departmentResponse.json();
+
                     const hallList = (Array.isArray(hallData) ? hallData : hallData.halls || hallData.data || []).filter(h => h && h.unique_id && h.name);
+                    const schoolList = (Array.isArray(schoolData) ? schoolData : schoolData.schools || schoolData.data || []).filter(s => s && s.unique_id && s.school_name);
+                    const departmentList = (Array.isArray(departmentData) ? departmentData : departmentData.departments || departmentData.data || []).filter(d => d && d.unique_id && d.department_name);
+
+                    const schoolMap = new Map(schoolList.map(s => [s.unique_id, s]));
+                    const departmentMap = new Map(departmentList.map(d => [d.unique_id, d]));
+                    
+                    this.schoolOptions = schoolList.map(s => ({ value: s.unique_id, label: s.school_name }));
+                    this.departmentOptions = departmentList.map(d => ({ value: d.unique_id, label: d.department_name, schoolId: d.school_id }));
 
                     this.halls = hallList.map(hall => {
                         let status = 'Available';
@@ -496,47 +542,6 @@
                             }
                         }
 
-                        return {
-                            ...hall,
-                            primaryOwner: 'Loading...', secondaryOwner: '',
-                            incharge_name: 'Loading...', incharge_email: '', incharge_contact_number: '',
-                            status: status,
-                            statusColor: statusColor,
-                            date: hall.created_at ? new Date(hall.created_at).toISOString().split('T')[0] : 'N/A',
-                            floor: hall.floor ? hall.floor.charAt(0).toUpperCase() + hall.floor.slice(1).toLowerCase() + ' Floor' : 'N/A',
-                            zone: hall.zone ? hall.zone.charAt(0).toUpperCase() + hall.zone.slice(1).toLowerCase() + ' Zone' : 'N/A',
-                            features: Array.isArray(hall.features) ? hall.features.map(f => f.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).sort() : []
-                        };
-                    });
-                    this.isLoading = false;
-
-                    const urlsch = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool
-                    const urldept = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept
-
-                    const [schoolResponse, departmentResponse] = await Promise.all([
-                        fetch(urlsch),
-                        fetch(urldept)
-                    ]);
-
-                    if (!schoolResponse.ok || !departmentResponse.ok) {
-                         this.halls.forEach(hall => { hall.primaryOwner = 'N/A'; });
-                         console.error("Could not fetch school or department data.");
-                         return;
-                    }
-
-                    const schoolData = await schoolResponse.json();
-                    const departmentData = await departmentResponse.json();
-                    
-                    const schoolList = (Array.isArray(schoolData) ? schoolData : schoolData.schools || schoolData.data || []).filter(s => s && s.unique_id && s.school_name);
-                    const departmentList = (Array.isArray(departmentData) ? departmentData : departmentData.departments || departmentData.data || []).filter(d => d && d.unique_id && d.department_name);
-
-                    const schoolMap = new Map(schoolList.map(s => [s.unique_id, s]));
-                    const departmentMap = new Map(departmentList.map(d => [d.unique_id, d]));
-                    
-                    this.schoolOptions = schoolList.map(s => ({ value: s.unique_id, label: s.school_name }));
-                    this.departmentOptions = departmentList.map(d => ({ value: d.unique_id, label: d.department_name, schoolId: d.school_id }));
-
-                    this.halls.forEach(hall => {
                         let primaryOwner = 'Administration';
                         let secondaryOwner = hall.section || '';
                         let incharge_name = 'N/A', incharge_email = 'N/A', incharge_contact_number = 'N/A';
@@ -558,13 +563,19 @@
                             incharge_email = school.incharge_email;
                             incharge_contact_number = school.incharge_contact_number;
                         }
-                        
-                        hall.primaryOwner = primaryOwner;
-                        hall.secondaryOwner = secondaryOwner;
-                        hall.incharge_name = incharge_name;
-                        hall.incharge_email = incharge_email;
-                        hall.incharge_contact_number = incharge_contact_number;
+
+                        return {
+                            ...hall,
+                            primaryOwner, secondaryOwner,
+                            incharge_name, incharge_email, incharge_contact_number,
+                            status, statusColor,
+                            date: hall.created_at ? new Date(hall.created_at).toISOString().split('T')[0] : 'N/A',
+                            floor: hall.floor ? hall.floor.charAt(0).toUpperCase() + hall.floor.slice(1).toLowerCase() + ' Floor' : 'N/A',
+                            zone: hall.zone ? hall.zone.charAt(0).toUpperCase() + hall.zone.slice(1).toLowerCase() + ' Zone' : 'N/A',
+                            features: Array.isArray(hall.features) ? hall.features.map(f => f.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).sort() : []
+                        };
                     });
+                    this.isLoading = false;
 
                 } catch (error) {
                     this.errorMessage = `An error occurred: ${error.message}. Please try again later.`;
@@ -597,11 +608,10 @@
 
             async deleteSelectedItems() {
                 this.modals.confirmDelete = false;
-                const urlhall = AppConfig.apiBaseUrl + AppConfig.endpoints.hall
-                const endpoint = urlhall;
+                const endpoint = AppConfig.apiBaseUrl + AppConfig.endpoints.hall;
 
                 const promises = this.selectedItems.map(id => 
-                    fetch(`${endpoint}/${id}`, { method: 'DELETE' })
+                    this.fetchWithAuth(`${endpoint}/${id}`, { method: 'DELETE' })
                 );
 
                 try {
