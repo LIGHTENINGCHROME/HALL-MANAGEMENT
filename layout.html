@@ -1,65 +1,139 @@
-<!-- This file contains the shared header and navigation for all your pages -->
-<script src="config.js"></script>
-<header class="bg-[rgba(0,0,0,0.63)] text-white p-4 shadow-md flex items-center justify-between">
-    <div class="flex items-center space-x-4">
-        <div class="h-[60px] rounded-full overflow-hidden">
-            <img src="download.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/60x60/14555F/FFFFFF?text=PU'; this.onerror=null;">
-        </div>
-        <h1 class="text-xl font-semibold">PONDICHERRY UNIVERSITY</h1>
-    </div>
-    <div class="flex items-center space-x-4">
-        <span class="text-lg font-medium">ADMIN</span>
-        <span class="text-lg">|</span>
-        <a onclick="logout()" class="text-lg font-medium hover:underline flex items-center space-x-1">
-            <span>LOGOUT</span>
-            <i class="fas fa-sign-out-alt"></i>
-        </a>
-    </div>
-</header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pondicherry University Admin</title>
 
-<nav class="bg-[rgba(255,255,255,0.11)] text-white shadow-lg py-1">
-    <div class="container mx-auto flex justify-center space-x-8 lg:space-x-12 relative" x-data>
-        <!-- Nav Item: DASHBOARD -->
-        <div class="relative group">
-            <a href="index.html" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md">
-                <span>DASHBOARD</span>
-            </a>
-        </div>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-        <!-- Nav Item: HALL DETAILS -->
-        <div class="relative group" x-data="{ open: false }" @click.away="open = false">
-            <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
-                <span>HALL DETAILS</span>
-                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
-            </button>
-            <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
-                <a href="addHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Hall</a>
-                <a href="manageHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage Halls</a>
+    <style>
+        /* A simple background for demonstration */
+        body {
+            background-color: #1f2937; /* A dark gray */
+            color: #f3f4f6; /* A light text color for content */
+        }
+    </style>
+</head>
+<body>
+
+    <script src="config.js"></script>
+
+    <div x-data="{ mobileMenuOpen: false }">
+        <header class="bg-[rgba(0,0,0,0.63)] text-white p-4 shadow-md flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="h-[60px] w-[60px] rounded-full overflow-hidden flex-shrink-0">
+                    <img src="download.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/60x60/14555F/FFFFFF?text=PU'; this.onerror=null;">
+                </div>
+                <h1 class="text-lg sm:text-xl font-semibold">PONDICHERRY UNIVERSITY</h1>
             </div>
-        </div>
-
-        <!-- Nav Item: SCHOOL/DEPARTMENT -->
-        <div class="relative group" x-data="{ open: false }" @click.away="open = false">
-            <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
-                <span>SCHOOL/DEPARTMENT</span>
-                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
-            </button>
-            <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-10">
-                <a href="addSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add School/Department</a>
-                <a href="manageSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage School/Department</a>
+            <div class="flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-4">
+                    <span class="text-lg font-medium">ADMIN</span>
+                    <span class="text-lg">|</span>
+                    <a onclick="logout()" class="text-lg font-medium hover:underline flex items-center space-x-1 cursor-pointer">
+                        <span>LOGOUT</span>
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+                <div class="lg:hidden">
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="text-white focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                        </svg>
+                    </button>
+                </div>
             </div>
-        </div>
-
-        <!-- Nav Item: EMPLOYEE DETAILS -->
-        <div class="relative group" x-data="{ open: false }" @click.away="open = false">
-            <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
-                <span>EMPLOYEE DETAILS</span>
-                <i class="fas fa-chevron-down text-sm" :class="{ 'rotate-180': open }"></i>
-            </button>
-            <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
-                <a href="employee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Employee</a>
-                <a href="manageEmployee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">View Employees</a>
+        </header>
+    
+        <nav class="bg-[rgba(255,255,255,0.11)] text-white shadow-lg relative">
+            <div class="container mx-auto justify-center space-x-8 lg:space-x-12 hidden lg:flex">
+                <a href="index.html" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md">
+                    <span>DASHBOARD</span>
+                </a>
+    
+                <div class="relative group" x-data="{ open: false }">
+                    <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                        <span>HALL DETAILS</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-0 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                        <a href="addHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Hall</a>
+                        <a href="manageHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage Halls</a>
+                    </div>
+                </div>
+    
+                <div class="relative group" x-data="{ open: false }">
+                    <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                        <span>SCHOOL/DEPARTMENT</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-0 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                        <a href="addSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add School/Department</a>
+                        <a href="manageSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage School/Department</a>
+                    </div>
+                </div>
+    
+                <div class="relative group" x-data="{ open: false }">
+                    <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                        <span>EMPLOYEE DETAILS</span>
+                        <i class="fas fa-chevron-down text-sm transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-0 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                        <a href="employee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Employee</a>
+                        <a href="manageEmployee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">View Employees</a>
+                    </div>
+                </div>
             </div>
-        </div>
+    
+            <div x-show="mobileMenuOpen" x-transition class="lg:hidden py-2">
+                <a href="index.html" class="block py-2 px-4 text-sm hover:bg-gray-700">DASHBOARD</a>
+                
+                <div x-data="{ open: false }">
+                    <button @click="open = !open" class="w-full flex justify-between items-center py-2 px-4 text-sm hover:bg-gray-700">
+                        <span>HALL DETAILS</span>
+                        <i class="fas fa-chevron-down text-xs transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="pl-8">
+                        <a href="addHall.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Add Hall</a>
+                        <a href="manageHall.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Manage Halls</a>
+                    </div>
+                </div>
+    
+                <div x-data="{ open: false }">
+                    <button @click="open = !open" class="w-full flex justify-between items-center py-2 px-4 text-sm hover:bg-gray-700">
+                        <span>SCHOOL/DEPARTMENT</span>
+                        <i class="fas fa-chevron-down text-xs transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="pl-8">
+                        <a href="addSD.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Add School/Department</a>
+                        <a href="manageSD.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Manage School/Department</a>
+                    </div>
+                </div>
+    
+                <div x-data="{ open: false }">
+                    <button @click="open = !open" class="w-full flex justify-between items-center py-2 px-4 text-sm hover:bg-gray-700">
+                        <span>EMPLOYEE DETAILS</span>
+                        <i class="fas fa-chevron-down text-xs transition-transform" :class="{ 'rotate-180': open }"></i>
+                    </button>
+                    <div x-show="open" x-transition class="pl-8">
+                        <a href="employee.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Add Employee</a>
+                        <a href="manageEmployee.html" class="block py-2 px-4 text-xs hover:bg-gray-600">View Employees</a>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-700 mt-2 pt-2 md:hidden">
+                    <a onclick="logout()" class="block py-2 px-4 text-sm hover:bg-gray-700 flex items-center space-x-2">
+                         <i class="fas fa-sign-out-alt"></i>
+                         <span>LOGOUT (ADMIN)</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
     </div>
-</nav>
+</body>
+</html>
