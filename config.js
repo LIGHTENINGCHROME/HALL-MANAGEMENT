@@ -39,7 +39,7 @@ const AppConfig = {
     },
 
     links: {
-        login: 'public/login.html'
+        login: './public/login.html'
     }
 };
 
