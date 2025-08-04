@@ -161,17 +161,10 @@
                 generalOptions: [ { value: 'ENGINEERING_WING', label: 'Engineering Wing' }, { value: 'EXAMINATION_WING', label: 'Examination Wing' }, { value: 'LIBRARY', label: 'Library' }, { value: 'GUEST_HOUSE', label: 'Guest House' } ],
                 
                 // --- AUTHENTICATION LOGIC ---
-                getAuthHeaders() {
-                    const token = localStorage.getItem('authToken');
-                    if (!token) return null;
-                    return {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    };
-                },
+                 
 
                 init() {
-                    const headers = this.getAuthHeaders();
+                    const headers = getAuthHeaders();
                     if (!headers) {
                         console.error("No auth token found. Redirecting to login.");
                         logout();
@@ -191,7 +184,7 @@
                 get filteredGeneral() { return this.generalOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.general.toLowerCase())); },
 
                 async fetchWithAuth(url) {
-                    const headers = this.getAuthHeaders();
+                    const headers = getAuthHeaders();
                     if (!headers) {
                         this.logout();
                         throw new Error('User not authenticated');
@@ -300,7 +293,7 @@
                     
                     console.log('Sending Payload:', JSON.stringify(payload, null, 2));
 
-                    const headers = this.getAuthHeaders();
+                    const headers = getAuthHeaders();
                     if (!headers) {
                         this.logout();
                         return;

@@ -154,21 +154,9 @@
                         { name: 'Conference', count: this.hallTypes.conferenceHalls, percentage: (this.hallTypes.conferenceHalls / total) * 100, color: 'bg-teal-500' }
                     ];
                 },
-
-                // Helper function to create authorization headers
-                getAuthHeaders() {
-                    const token = localStorage.getItem('authToken');
-                    if (!token) {
-                        return null;
-                    }
-                    return {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    };
-                },
                 
                 async init() {
-                    const headers = this.getAuthHeaders();
+                    const headers = getAuthHeaders();
                     
                     // If no token is found, redirect to login page immediately
                     if (!headers) {

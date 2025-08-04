@@ -189,12 +189,15 @@
                     const token = data.token;
                     if (token) {
                         // Securely save the token to localStorage
-                        localStorage.setItem('authToken', token);
+                        sessionStorage.setItem('authToken', token);
                         displayMessage('Login successful! Redirecting...', 'success');
                         setTimeout(() => {
                             if (data.role=="ADMIN"){
                             window.location.replace("../index.html");
-                        };
+                            }
+                            else if (data.role=="HOD"){
+                            window.location.replace('../HOD.html')
+                            }
                         }, 1000);
 
                     } else {

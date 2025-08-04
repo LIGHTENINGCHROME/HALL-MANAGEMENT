@@ -6,9 +6,18 @@
 // Example usage in your JS: AppConfig.apiBaseUrl + AppConfig.endpoints.createEmployee
 // =================================================================
 function logout(){
-    localStorage.removeItem('authToken');
+    sessionStorage.removeItem('authToken');
     window.location.href = AppConfig.links.login; // Adjust to your login page path
 }
+
+function getAuthHeaders() {
+                const token = sessionStorage.getItem('authToken');
+                if (!token) return null;
+                return {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                };
+            }
 
 const AppConfig = {
     // Base URL for your API. All endpoint URLs will be appended to this.

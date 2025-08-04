@@ -1,0 +1,230 @@
+/* Custom styles to match the theme */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #0f172a; /* Fallback background */
+    background-image: linear-gradient(135deg, #022c43, #053f5e, #115173);
+    color: #e2e8f0;
+}
+
+/* Styling for FullCalendar to match the dark theme */
+:root {
+    --fc-border-color: #334155;
+    --fc-daygrid-event-dot-width: 8px;
+    --fc-list-event-dot-width: 10px;
+    --fc-event-bg-color: #1e40af;
+    --fc-event-border-color: #1d4ed8;
+    --fc-event-text-color: #ffffff;
+    --fc-event-selected-overlay-bg: rgba(45, 212, 191, 0.25);
+    --fc-more-link-bg-color: #1e293b;
+    --fc-more-link-text-color: #94a3b8;
+    --fc-day-bg-color: transparent;
+    --fc-today-bg-color: rgba(30, 64, 175, 0.2);
+}
+
+.fc .fc-toolbar-title {
+    color: #f8fafc;
+}
+
+.fc .fc-button-primary {
+    background-color: #1e3a8a;
+    border-color: #1e3a8a;
+    color: #e0e7ff;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: #1e40af;
+    border-color: #1e40af;
+}
+
+.fc .fc-button-primary:disabled {
+    background-color: #1e293b;
+    border-color: #1e293b;
+}
+
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
+    color: #cbd5e1;
+}
+
+.fc-theme-standard .fc-list-day-cushion, .fc-theme-standard .fc-list-table th {
+    background-color: #1e293b;
+}
+
+.fc-theme-standard td, .fc-theme-standard th {
+    border-color: #334155;
+}
+
+/* Custom scrollbar for all scrollable areas */
+.table-container::-webkit-scrollbar, 
+.card-grid-scrollable::-webkit-scrollbar, 
+#semester-halls-container::-webkit-scrollbar, 
+#booking-panel-container .overflow-y-auto::-webkit-scrollbar,
+.selected-slots-container::-webkit-scrollbar,
+.main-view-content::-webkit-scrollbar,
+.browse-filter-panel::-webkit-scrollbar,
+.nav-dropdown-scrollable::-webkit-scrollbar,
+#final-booking-form-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.table-container::-webkit-scrollbar-track, 
+.card-grid-scrollable::-webkit-scrollbar-track, 
+#semester-halls-container::-webkit-scrollbar-track, 
+#booking-panel-container .overflow-y-auto::-webkit-scrollbar-track,
+.selected-slots-container::-webkit-scrollbar-track,
+.main-view-content::-webkit-scrollbar-track,
+.browse-filter-panel::-webkit-scrollbar-track,
+.nav-dropdown-scrollable::-webkit-scrollbar-track,
+#final-booking-form-content::-webkit-scrollbar-track {
+    background: #1e293b;
+    border-radius: 10px;
+}
+.table-container::-webkit-scrollbar-thumb, 
+.card-grid-scrollable::-webkit-scrollbar-thumb, 
+#semester-halls-container::-webkit-scrollbar-thumb, 
+#booking-panel-container .overflow-y-auto::-webkit-scrollbar-thumb,
+.selected-slots-container::-webkit-scrollbar-thumb,
+.main-view-content::-webkit-scrollbar-thumb,
+.browse-filter-panel::-webkit-scrollbar-thumb,
+.nav-dropdown-scrollable::-webkit-scrollbar-thumb,
+#final-booking-form-content::-webkit-scrollbar-thumb {
+    background-color: #475569;
+    border-radius: 10px;
+    border: 2px solid #1e293b;
+}
+
+/* Toggle switch style */
+.peer:checked ~ .dot {
+    transform: translateX(100%);
+    background-color: #2563eb;
+}
+
+/* Floating effect for hall cards */
+.hall-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hall-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(96, 165, 250, 0.3);
+}
+
+.card-grid-scrollable {
+    overflow-y: auto;
+}
+
+.table-container {
+    overflow: auto;
+}
+
+.semester-hall-card.active {
+    border-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    transform: scale(1.02);
+}
+
+/* --- Styles for Browse & Book Hall Type Buttons --- */
+.hall-type-btn.active {
+    background-color: #2563eb !important; /* blue-600 */
+    color: white;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.7);
+}
+.hall-type-btn:hover:not(.active) {
+    box-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+    transform: translateY(-2px);
+}
+
+/* --- Scrollable container for selected slots --- */
+.selected-slots-container {
+    max-height: 10rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid #334155;
+    border-radius: 0.5rem;
+    background-color: rgba(15, 23, 42, 0.5);
+}
+
+
+/* --- Styles for Interactive Timetable --- */
+.timetable-header-cell {
+    vertical-align: bottom;
+    padding-bottom: 0.5rem;
+}
+.timetable-slot {
+    height: 2.5rem;
+    line-height: 2.5rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+.timetable-slot.booked {
+    background-color: #374151; /* gray-700 */
+    color: #9ca3af; /* gray-400 */
+    cursor: not-allowed;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+.timetable-slot.available {
+    background-color: rgba(14, 165, 233, 0.1); /* sky-500/10 */
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.timetable-slot.available:hover {
+    background-color: rgba(59, 130, 246, 0.3); /* blue-500/30 */
+}
+.timetable-slot.selected {
+    background-color: #2563eb; /* blue-600 */
+    color: white;
+    border: 1px solid #3b82f6; /* blue-500 */
+}
+
+/* --- Weekend Styling --- */
+.weekend-header {
+    color: #f87171; /* red-400 */
+}
+.weekend-cell > div {
+    background-color: rgba(153, 27, 27, 0.1); /* red-900 with opacity */
+}
+
+
+/* --- Styles for Hall Booking Details Grid --- */
+#booking-calendar-grid .bg-cyan-500\/80 {
+    background-color: rgba(6, 182, 212, 0.8); /* Selected slot color */
+}
+#booking-calendar-grid .bg-cyan-400\/80 {
+    background-color: rgba(34, 211, 238, 0.8); /* Selected slot hover color */
+}
+
+
+/* Modal Styles */
+.modal {
+    transition: opacity 0.3s ease-in-out;
+}
+.modal-content {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Glowing Effects for modals */
+.glowing-select, .glowing-input {
+    transition: box-shadow 0.3s ease;
+}
+.glowing-select:focus, .glowing-input:focus {
+    box-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+}
+.glowing-btn {
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+.glowing-btn:hover {
+    box-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+}
+
+.browse-filter-panel {
+    overflow-y: auto;
+    max-height: calc(100vh - 12rem); /* Adjust as needed */
+}
+
+.nav-dropdown-scrollable {
+    max-height: 75vh;
+    overflow-y: auto;
+}

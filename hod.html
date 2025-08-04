@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Hall Booking System</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="top-bars-container" class="sticky top-0 z-30 transition-transform duration-300">
+        <header class="bg-slate-900/80 backdrop-blur-sm shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center space-x-4">
+                        <img src="https://upload.wikimedia.org/wikipedia/en/thumb/0/06/Pondicherry_University_logo.svg/1200px-Pondicherry_University_logo.svg.png" alt="University Logo" class="h-10 w-10 rounded-full bg-white p-1">
+                        <span class="text-white font-bold text-xl hidden sm:block">PONDICHERRY UNIVERSITY</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-slate-300 hidden md:block" id="user-name-display"></span>
+                        <!-- MODIFIED: Added onclick="logout()" to the logout link -->
+                        <a href="#" onclick="logout()" class="flex items-center text-slate-300 hover:text-white transition-colors duration-200">
+                            <i data-lucide="log-out" class="w-5 h-5 mr-2"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <nav class="bg-slate-800/60 backdrop-blur-sm shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div id="main-nav" class="flex items-center justify-center flex-wrap gap-x-1 md:gap-x-4 gap-y-2 py-3">
+                    </div>
+            </div>
+        </nav>
+    </div>
+
+    <main id="dashboard-view" class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 flex-shrink-0">
+                <h1 class="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-0">Hall Booking Calendar</h1>
+                <div id="calendar-view-toggle" class="flex items-center bg-slate-700 rounded-lg p-1 space-x-1">
+                    <button data-view="dayGridMonth" class="view-btn px-4 py-2 text-sm font-semibold rounded-md transition">Month</button>
+                    <button data-view="timeGridWeek" class="view-btn px-4 py-2 text-sm font-semibold rounded-md transition">Week</button>
+                    <button data-view="timeGridDay" class="view-btn px-4 py-2 text-sm font-semibold rounded-md transition">Day</button>
+                </div>
+            </div>
+            <div id='calendar' class="w-full flex-grow"></div>
+        </div>
+    </main>
+
+    <div id="hall-details-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-white text-center mb-6 flex-shrink-0">Hall Details</h1>
+            
+            <!-- Action Buttons Toolbar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 flex-shrink-0">
+                <div class="flex items-center space-x-4">
+                    <button id="status-btn" disabled class="glowing-btn flex items-center px-4 py-2 text-sm font-semibold text-white bg-yellow-600 hover:bg-yellow-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="toggle-right" class="w-4 h-4 mr-2"></i>Update Status
+                    </button>
+                    <button id="ownership-btn" disabled class="glowing-btn flex items-center px-4 py-2 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="users" class="w-4 h-4 mr-2"></i>Transfer Ownership
+                    </button>
+                    <button id="features-btn" disabled class="glowing-btn flex items-center px-4 py-2 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="sparkles" class="w-4 h-4 mr-2"></i>Modify Features
+                    </button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="clear-filters-btn" class="flex items-center px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-700 hover:bg-slate-600 rounded-lg transition">
+                        <i data-lucide="filter-x" class="w-4 h-4 mr-2"></i>Clear All Filters
+                    </button>
+                    <label for="multiselect-toggle" class="flex items-center cursor-pointer">
+                        <span class="mr-3 text-sm font-medium text-slate-300">Multi-Select</span>
+                        <div class="relative">
+                            <input type="checkbox" id="multiselect-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">
+                                <input type="checkbox" id="select-all-checkbox" class="rounded bg-slate-700 border-slate-500 text-blue-500 focus:ring-blue-500" disabled>
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Hall Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Belongs to</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Features</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Incharge Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hall-details-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="archive-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">Archived Hall Details</h1>
+            
+            <!-- Action Buttons Toolbar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 flex-shrink-0">
+                <div class="flex items-center space-x-4">
+                    <button id="reactivate-btn" disabled class="glowing-btn flex items-center px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i>Re-activate
+                    </button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <label for="archive-multiselect-toggle" class="flex items-center cursor-pointer">
+                        <span class="mr-3 text-sm font-medium text-slate-300">Multi-Select</span>
+                        <div class="relative">
+                            <input type="checkbox" id="archive-multiselect-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                     <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">
+                                <input type="checkbox" id="select-all-archive-checkbox" class="rounded bg-slate-700 border-slate-500 text-blue-500 focus:ring-blue-500" disabled>
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Hall Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Belongs to</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Features</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Incharge Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archived-hall-details-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="employee-details-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+         <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">Employee Details</h1>
+            
+            <!-- Action Buttons Toolbar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 flex-shrink-0">
+                <div class="flex items-center space-x-4">
+                    <button id="modify-employee-btn" disabled class="glowing-btn flex items-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="pencil" class="w-4 h-4 mr-2"></i>Modify
+                    </button>
+                    <button id="delete-employee-btn" disabled class="glowing-btn flex items-center px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>Delete
+                    </button>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <label for="employee-multiselect-toggle" class="flex items-center cursor-pointer">
+                        <span class="mr-3 text-sm font-medium text-slate-300">Multi-Select</span>
+                        <div class="relative">
+                            <input type="checkbox" id="employee-multiselect-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-500/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6">
+                                <input type="checkbox" id="select-all-employee-checkbox" class="rounded bg-slate-700 border-slate-500 text-blue-500 focus:ring-blue-500" disabled>
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Employee Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Designation</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Office</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employee-details-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="browse-book-view" class="hidden flex-grow w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-8 flex-shrink-0" style="color: #60a5fa;">Browse & Book Hall</h1>
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-grow min-h-0">
+                <aside class="lg:col-span-1 space-y-6 browse-filter-panel pr-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-3">Hall Type:</h3>
+                        <div id="hall-type-filters" class="grid grid-cols-2 gap-2">
+                             <button data-hall-type="Seminar" class="hall-type-btn px-4 py-2 text-sm rounded-lg transition bg-slate-700 hover:bg-slate-600 text-slate-300">Seminar</button>
+                             <button data-hall-type="Auditorium" class="hall-type-btn px-4 py-2 text-sm rounded-lg transition bg-slate-700 hover:bg-slate-600 text-slate-300">Auditorium</button>
+                             <button data-hall-type="Lecture Hall" class="hall-type-btn px-4 py-2 text-sm rounded-lg transition bg-slate-700 hover:bg-slate-600 text-slate-300">Lecture Hall</button>
+                             <button data-hall-type="Conference Hall" class="hall-type-btn px-4 py-2 text-sm rounded-lg transition bg-slate-700 hover:bg-slate-600 text-slate-300">Conference Hall</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="school-filter-input" class="block text-lg font-semibold text-white mb-2">School:</label>
+                        <div class="relative">
+                            <input type="text" id="school-filter-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Search for a school...">
+                            <div id="school-filter-options" class="absolute z-10 w-full bg-slate-800 border border-slate-600 rounded-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                        </div>
+                        <input type="hidden" id="school-filter">
+                    </div>
+                    <div>
+                        <label for="dept-filter-input" class="block text-lg font-semibold text-white mb-2">Department:</label>
+                        <div class="relative">
+                            <input type="text" id="dept-filter-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Search for a department...">
+                            <div id="dept-filter-options" class="absolute z-10 w-full bg-slate-800 border border-slate-600 rounded-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                        </div>
+                        <input type="hidden" id="dept-filter">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold text-white">Capacity</h3>
+                            <button id="clear-capacity" class="text-sm text-blue-400 hover:text-blue-300">Clear</button>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-center"><input type="radio" name="capacity" value="less-50" class="form-radio bg-slate-700 border-slate-600 text-blue-500 h-4 w-4 mr-2">Less than 50</label>
+                            <label class="flex items-center"><input type="radio" name="capacity" value="50-100" class="form-radio bg-slate-700 border-slate-600 text-blue-500 h-4 w-4 mr-2">50 to 100</label>
+                            <label class="flex items-center"><input type="radio" name="capacity" value="more-100" class="form-radio bg-slate-700 border-slate-600 text-blue-500 h-4 w-4 mr-2">More than 100</label>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold text-white">Features</h3>
+                            <button id="clear-features" class="text-sm text-blue-400 hover:text-blue-300">Clear</button>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="flex items-center"><input type="checkbox" data-feature="Projector" class="form-checkbox bg-slate-700 border-slate-600 rounded text-blue-500 h-4 w-4 mr-2">Projector</label>
+                            <label class="flex items-center"><input type="checkbox" data-feature="Smartboard" class="form-checkbox bg-slate-700 border-slate-600 rounded text-blue-500 h-4 w-4 mr-2">Smartboard</label>
+                            <label class="flex items-center"><input type="checkbox" data-feature="AC" class="form-checkbox bg-slate-700 border-slate-600 rounded text-blue-500 h-4 w-4 mr-2">AC</label>
+                            <label class="flex items-center"><input type="checkbox" data-feature="Computer" class="form-checkbox bg-slate-700 border-slate-600 rounded text-blue-500 h-4 w-4 mr-2">Computer</label>
+                            <label class="flex items-center"><input type="checkbox" data-feature="Audio System" class="form-checkbox bg-slate-700 border-slate-600 rounded text-blue-500 h-4 w-4 mr-2">Audio System</label>
+                        </div>
+                    </div>
+                </aside>
+                <div class="lg:col-span-3 flex flex-col">
+                    <div class="flex-shrink-0">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="relative">
+                                <label for="from-date" class="block text-sm font-medium text-slate-300 mb-1">From:</label>
+                                <input type="date" id="from-date" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div class="relative">
+                                <label for="to-date" class="block text-sm font-medium text-slate-300 mb-1">To:</label>
+                                <input type="date" id="to-date" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                        </div>
+                        <div class="bg-slate-900/50 p-4 rounded-lg mb-6">
+                            <div class="flex justify-between items-center mb-3">
+                                 <div class="flex gap-4">
+                                    <button id="forenoon-btn" class="text-slate-400 hover:text-white font-semibold">Forenoon</button>
+                                    <button id="afternoon-btn" class="text-slate-400 hover:text-white font-semibold">Afternoon</button>
+                                </div>
+                                <button id="clear-timeslots" class="text-sm text-blue-400 hover:text-blue-300">Clear Selection</button>
+                            </div>
+                            <div id="time-slot-buttons" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                <button data-time="09:30 AM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">09:30am</button>
+                                <button data-time="10:30 AM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">10:30am</button>
+                                <button data-time="11:30 AM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">11:30am</button>
+                                <button data-time="12:30 PM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">12:30pm</button>
+                                <button data-time="01:30 PM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">01:30pm</button>
+                                <button data-time="02:30 PM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">02:30pm</button>
+                                <button data-time="03:30 PM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">03:30pm</button>
+                                <button data-time="04:30 PM" class="px-3 py-2 text-sm rounded-lg bg-slate-700 hover:bg-slate-600 transition">04:30pm</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-grow min-h-0 flex flex-col">
+                        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                            <h2 id="hall-listing-title" class="text-xl font-bold text-white"></h2>
+                            <div class="flex items-center gap-2 text-sm">
+                                <label for="view-mode-select" class="text-slate-300">View:</label>
+                                <select id="view-mode-select" class="bg-slate-700 border border-slate-600 rounded-lg px-2 py-1 text-white focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="with-image">With Image</option>
+                                    <option value="without-image">Without Image</option>
+                                    <option value="table">Table</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="hall-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 card-grid-scrollable flex-grow"></div>
+                        <div id="hall-table-container" class="hidden table-container flex-grow min-h-0 min-w-0"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="semester-booking-view" class="hidden flex-grow w-full px-4 sm:px-6 lg:p-8">
+        <div class="h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-white text-center mb-6 flex-shrink-0">Semester Booking</h1>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-grow min-h-0">
+                <div id="semester-halls-panel" class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 flex flex-col lg:col-span-5">
+                    <h2 class="text-2xl font-bold text-white mb-4 flex-shrink-0">Select a Hall</h2>
+                    <div id="semester-halls-container" class="space-y-6 flex-grow overflow-y-auto pr-2 min-h-0">
+                    </div>
+                </div>
+                <div id="booking-panel-container" class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 flex flex-col lg:col-span-7">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="my-bookings-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">My Bookings</h1>
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6"><input type="checkbox" class="rounded bg-slate-700 border-slate-500 text-blue-500 focus:ring-blue-500"></th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked On</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Hall Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Purpose</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date & Time</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="my-bookings-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="approve-bookings-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">Approve / Reject Bookings</h1>
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked On</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Hall Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Purpose</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date & Time</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked By</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approve-bookings-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+     <div id="booking-conflicts-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">Booking Conflicts</h1>
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked On</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Hall Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Purpose</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date & Time</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked By</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booking-conflicts-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="forward-bookings-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">Forward Bookings</h1>
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked On</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Hall Details</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Purpose</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Date & Time</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Booked By</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Status</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-white">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="forward-bookings-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-bookings-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-6 flex-shrink-0" style="color: #60a5fa;">View Bookings</h1>
+            <div class="table-container flex-grow min-h-0 min-w-0">
+                <table class="min-w-full divide-y divide-slate-700">
+                    <thead class="bg-slate-900/50 sticky top-0">
+                        <tr>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><span class="flex items-center gap-2">Booked On <i data-modal-target="filter-booked-on-modal" class="filter-icon cursor-pointer text-slate-400 hover:text-white" data-lucide="filter"></i></span></th>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><span class="flex items-center gap-2">Hall Details <i data-modal-target="filter-hall-details-modal" class="filter-icon cursor-pointer text-slate-400 hover:text-white" data-lucide="filter"></i></span></th>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><span class="flex items-center gap-2">Purpose <i data-modal-target="filter-purpose-modal" class="filter-icon cursor-pointer text-slate-400 hover:text-white" data-lucide="filter"></i></span></th>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><span class="flex items-center gap-2">Date & Time <i data-modal-target="filter-datetime-modal" class="filter-icon cursor-pointer text-slate-400 hover:text-white" data-lucide="filter"></i></span></th>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><span class="flex items-center gap-2">Booked By <i data-modal-target="filter-organiser-modal" class="filter-icon cursor-pointer text-slate-400 hover:text-white" data-lucide="filter"></i></span></th>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white"><span class="flex items-center gap-2">Status <i data-modal-target="filter-status-modal" class="filter-icon cursor-pointer text-slate-400 hover:text-white" data-lucide="filter"></i></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="view-bookings-body" class="divide-y divide-slate-800 bg-slate-900/30"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="hall-booking-details-view" class="hidden flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-4 sm:p-6 lg:p-8 h-full flex flex-col">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 flex-shrink-0">
+                <div id="booking-hall-details" class="bg-blue-900/30 p-4 rounded-lg border border-blue-700"></div>
+                <div id="booking-hall-features" class="bg-green-900/30 p-4 rounded-lg border border-green-700"></div>
+                <div id="booking-hall-incharge" class="bg-yellow-900/30 p-4 rounded-lg border border-yellow-700"></div>
+            </div>
+
+            <div class="text-center mb-4 flex-shrink-0">
+                <h2 class="text-2xl font-bold text-white">Booking Details</h2>
+                <div class="flex items-center justify-center gap-4 mt-2">
+                    <button id="prev-month-btn" class="p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition">&lt;</button>
+                    <span id="current-month-year" class="text-xl font-semibold text-white">July 2025</span>
+                    <button id="next-month-btn" class="p-2 rounded-md bg-slate-700 hover:bg-slate-600 transition">&gt;</button>
+                </div>
+            </div>
+
+            <div id="booking-calendar-grid" class="table-container overflow-auto pb-4 flex-grow"></div>
+
+            <div class="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap mt-4 text-sm flex-shrink-0">
+                <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-green-500/80 mr-2"></span>Available</div>
+                <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-cyan-500/80 mr-2"></span>Selected</div>
+                <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-yellow-500/80 mr-2"></span>Pending</div>
+                <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-red-600/80 mr-2"></span>Booked</div>
+                <div class="flex items-center"><span class="w-4 h-4 rounded-full bg-gray-700/50 mr-2"></span>Past</div>
+            </div>
+
+            <div class="flex items-center justify-center gap-4 mt-6 flex-shrink-0">
+                <button onclick="window.history.back()" class="px-8 py-2 text-sm font-semibold text-white bg-slate-600 hover:bg-slate-700 rounded-lg transition">Back</button>
+                <button id="confirm-booking-btn" class="px-8 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">Book</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="final-booking-form-view" class="hidden flex-grow max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-slate-800/50 rounded-xl shadow-2xl p-8 text-slate-200 h-full flex flex-col">
+            <h1 class="text-3xl font-bold text-center mb-8 text-white flex-shrink-0">Hall Booking</h1>
+            <div id="final-booking-form-content" class="space-y-6 flex-grow overflow-y-auto pr-2 min-h-0"></div>
+        </div>
+    </div>
+
+    <footer class="bg-slate-900 text-center py-4 mt-auto">
+        <p class="text-slate-400 text-sm">&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <!-- MODAL BACKDROP -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden opacity-0 transition-opacity duration-300"></div>
+
+    <!-- HALL DETAILS MODALS -->
+    <div id="update-status-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content relative bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all">
+            <h3 class="text-lg font-bold text-white mb-4">Update Hall Status</h3>
+            <div class="space-y-4 text-slate-300">
+                <p>Select the new status for the selected hall(s).</p>
+                <fieldset class="flex gap-6">
+                    <label class="flex items-center"><input type="radio" name="status-option" value="true" class="form-radio h-4 w-4 bg-slate-700 border-slate-600 text-green-500 focus:ring-green-500 mr-2">Available</label>
+                    <label class="flex items-center"><input type="radio" name="status-option" value="false" class="form-radio h-4 w-4 bg-slate-700 border-slate-600 text-red-500 focus:ring-red-500 mr-2">Unavailable</label>
+                </fieldset>
+                <div id="status-reason-container" class="hidden">
+                    <label for="status-reason-select" class="block text-sm font-medium mb-1">Reason for Unavailability</label>
+                    <select id="status-reason-select" class="glowing-select w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                        <option value="">Select a reason...</option>
+                        <option value="Maintenance">Under Maintenance</option>
+                        <option value="Reserved">Reserved for University Event</option>
+                        <option value="Damaged">Damaged/Unusable</option>
+                        <option value="Removed">Permanently Removed from Service</option>
+                    </select>
+                </div>
+                <div id="status-date-range" class="hidden grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="status-from-date" class="block text-sm font-medium mb-1">From</label>
+                        <input type="date" id="status-from-date" class="glowing-input w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="status-to-date" class="block text-sm font-medium mb-1">To</label>
+                        <input type="date" id="status-to-date" class="glowing-input w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button class="modal-close-btn px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-600 hover:bg-slate-700 rounded-lg transition">Cancel</button>
+                <button id="submit-status-update" class="glowing-btn px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="transfer-ownership-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content relative bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all">
+            <h3 class="text-lg font-bold text-white mb-4">Transfer Ownership</h3>
+            <div class="space-y-4 text-slate-300">
+                <p>Choose the new owner for the selected hall(s).</p>
+                <fieldset class="flex flex-wrap gap-x-6 gap-y-2">
+                    <legend class="sr-only">Owner Type</legend>
+                    <label class="flex items-center"><input type="radio" name="owner-type" value="School" checked class="form-radio h-4 w-4 bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 mr-2">School</label>
+                    <label class="flex items-center"><input type="radio" name="owner-type" value="Department" class="form-radio h-4 w-4 bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 mr-2">Department</label>
+                    <label class="flex items-center"><input type="radio" name="owner-type" value="Administration" class="form-radio h-4 w-4 bg-slate-700 border-slate-600 text-blue-500 focus:ring-blue-500 mr-2">Administration</label>
+                </fieldset>
+                <div>
+                    <label for="owner-section-select" class="block text-sm font-medium mb-1">Select Section</label>
+                    <select id="owner-section-select" class="glowing-select w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white"></select>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button class="modal-close-btn px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-600 hover:bg-slate-700 rounded-lg transition">Cancel</button>
+                <button id="submit-ownership-transfer" class="glowing-btn px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">Transfer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modify-features-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-content relative bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex justify-between items-start">
+                <h3 class="text-lg font-bold text-white mb-4">Modify Features</h3>
+                <button id="clear-all-features" class="text-xs text-blue-400 hover:text-blue-300">Clear All</button>
+            </div>
+            <p class="text-slate-300 mb-4">Select the features available in this hall. (Only single selection is allowed)</p>
+            <div id="features-checkbox-container" class="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-60 overflow-y-auto pr-2">
+                <!-- Checkboxes will be dynamically inserted here -->
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button class="modal-close-btn px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-600 hover:bg-slate-700 rounded-lg transition">Cancel</button>
+                <button id="submit-features-update" class="glowing-btn px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">Save Features</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE DETAILS MODAL -->
+    <div id="update-employee-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="modal-content relative bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full p-8 transform transition-all duration-300 scale-95">
+            <h2 class="text-3xl font-bold text-center text-blue-400 mb-6">Update Employee</h2>
+            <div class="border-t border-blue-800/50 mb-6"></div>
+            <form id="update-employee-form" class="space-y-4">
+                <input type="hidden" id="update-employee-original-email">
+                <div>
+                    <label for="update-employee-name" class="block text-sm font-medium text-slate-300">Employee Name:</label>
+                    <input type="text" id="update-employee-name" class="mt-1 block w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="update-employee-email" class="block text-sm font-medium text-slate-300">Email:</label>
+                    <input type="email" id="update-employee-email" class="mt-1 block w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="update-employee-phone" class="block text-sm font-medium text-slate-300">Employee Contact:</label>
+                    <input type="text" id="update-employee-phone" class="mt-1 block w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="update-employee-designation" class="block text-sm font-medium text-slate-300">Designation:</label>
+                    <input type="text" id="update-employee-designation" class="mt-1 block w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="update-employee-school-input" class="block text-sm font-medium text-slate-300">School:</label>
+                    <div class="relative mt-1">
+                        <input type="text" id="update-employee-school-input" class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Search for a school...">
+                        <div id="update-employee-school-options" class="absolute z-20 w-full bg-slate-900 border border-slate-600 rounded-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <input type="hidden" id="update-employee-school">
+                </div>
+
+                 <div>
+                    <label for="update-employee-department-input" class="block text-sm font-medium text-slate-300">Department:</label>
+                    <div class="relative mt-1">
+                        <input type="text" id="update-employee-department-input" class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:ring-blue-500 focus:border-blue-500" placeholder="Search for a department...">
+                        <div id="update-employee-department-options" class="absolute z-10 w-full bg-slate-900 border border-slate-600 rounded-lg mt-1 hidden max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <input type="hidden" id="update-employee-department">
+                </div>
+
+                <div class="flex justify-center pt-6">
+                    <button type="button" class="modal-close-btn px-6 py-2 text-sm font-semibold text-slate-300 bg-slate-600 hover:bg-slate-700 rounded-lg transition mr-4">Cancel</button>
+                    <button type="submit" id="submit-employee-update" class="px-6 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition">Update Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW BOOKINGS FILTER MODALS -->
+    <div id="filter-hall-details-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden"></div>
+    <div id="filter-purpose-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden"></div>
+    <div id="filter-booked-on-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden"></div>
+    <div id="filter-datetime-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden"></div>
+    <div id="filter-organiser-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden"></div>
+    <div id="filter-status-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 hidden"></div>
+
+    <!-- ADDED: Authentication script loaded before other app scripts -->
+    <script src="js/auth.js"></script>
+    
+    <script src="js/data.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/nav.js"></script>
+    <script src="js/views/dashboard.js"></script>
+    <script src="js/views/hallDetails.js"></script>
+    <script src="js/views/archive.js"></script>
+    <script src="js/views/employee.js"></script>
+    <script src="js/views/browseBook.js"></script>
+    <script src="js/views/semesterBooking.js"></script>
+    <script src="js/views/myBookings.js"></script>
+    <script src="js/views/approveBookings.js"></script>
+    <script src="js/views/conflicts.js"></script>
+    <script src="js/views/forward.js"></script>
+    <script src="js/views/viewBookings.js"></script>
+    <script src="js/views/hallBookingDetails.js"></script>
+    <script src="js/views/finalBookingForm.js"></script>
+    <script src="js/main.js"></script>
+
+    <!-- ADDED: Auth check on page load -->
+    <script>
+        window.addEventListener('load', () => {
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

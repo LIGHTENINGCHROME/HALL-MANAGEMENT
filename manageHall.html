@@ -335,16 +335,9 @@
             },
 
             // --- AUTHENTICATION LOGIC ---
-            getAuthHeaders() {
-                const token = localStorage.getItem('authToken');
-                if (!token) return null;
-                return {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                };
-            },
+             
             async fetchWithAuth(url, options = {}) {
-                const headers = this.getAuthHeaders();
+                const headers = getAuthHeaders();
                 if (!headers) {
                     logout();
                     throw new Error('User not authenticated');
@@ -362,7 +355,7 @@
             // --- END AUTHENTICATION LOGIC ---
 
             init() { 
-                if (!this.getAuthHeaders()) {
+                if (!getAuthHeaders()) {
                     console.error("No auth token found. Redirecting to login.");
                     logout();
                     return;

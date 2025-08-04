@@ -155,18 +155,11 @@
             ],
 
             // --- AUTHENTICATION LOGIC ---
-            getAuthHeaders() {
-                const token = localStorage.getItem('authToken');
-                if (!token) return null;
-                return {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                };
-            },
+             
 
 
             async fetchWithAuth(url, options = {}) {
-                const headers = this.getAuthHeaders();
+                const headers = getAuthHeaders();
                 if (!headers) {
                     logout();
                     throw new Error('User not authenticated');
@@ -182,7 +175,7 @@
             // --- END AUTHENTICATION LOGIC ---
 
             async init() {
-                if (!this.getAuthHeaders()) {
+                if (!getAuthHeaders()) {
                     Alpine.store('modal').open(false, 'You are not logged in. Redirecting...');
                     logout();
                     return;
