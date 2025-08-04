@@ -56,34 +56,34 @@
                     <span>DASHBOARD</span>
                 </a>
     
-                <div class="relative group" x-data="{ open: false }">
-                    <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                    <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
                         <span>HALL DETAILS</span>
                         <i class="fas fa-chevron-down text-sm transition-transform" :class="{ 'rotate-180': open }"></i>
                     </button>
-                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-0 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
                         <a href="addHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Hall</a>
                         <a href="manageHall.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage Halls</a>
                     </div>
                 </div>
     
-                <div class="relative group" x-data="{ open: false }">
-                    <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                    <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
                         <span>SCHOOL/DEPARTMENT</span>
                         <i class="fas fa-chevron-down text-sm transition-transform" :class="{ 'rotate-180': open }"></i>
                     </button>
-                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-0 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-56 bg-gray-700 rounded-md shadow-lg py-1 z-10">
                         <a href="addSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add School/Department</a>
                         <a href="manageSD.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Manage School/Department</a>
                     </div>
                 </div>
     
-                <div class="relative group" x-data="{ open: false }">
-                    <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
+                <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                    <button @click="open = !open" class="flex items-center space-x-2 text-lg font-medium hover:text-blue-300 transition-colors duration-200 py-2 px-3 rounded-md focus:outline-none">
                         <span>EMPLOYEE DETAILS</span>
                         <i class="fas fa-chevron-down text-sm transition-transform" :class="{ 'rotate-180': open }"></i>
                     </button>
-                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-0 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
+                    <div x-show="open" x-transition class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-gray-700 rounded-md shadow-lg py-1 z-10">
                         <a href="employee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">Add Employee</a>
                         <a href="manageEmployee.html" class="block px-4 py-2 text-sm text-gray-200 hover:bg-gray-600 hover:text-white">View Employees</a>
                     </div>
@@ -92,7 +92,6 @@
     
             <div x-show="mobileMenuOpen" x-transition class="lg:hidden py-2">
                 <a href="index.html" class="block py-2 px-4 text-sm hover:bg-gray-700">DASHBOARD</a>
-                
                 <div x-data="{ open: false }">
                     <button @click="open = !open" class="w-full flex justify-between items-center py-2 px-4 text-sm hover:bg-gray-700">
                         <span>HALL DETAILS</span>
@@ -103,7 +102,6 @@
                         <a href="manageHall.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Manage Halls</a>
                     </div>
                 </div>
-    
                 <div x-data="{ open: false }">
                     <button @click="open = !open" class="w-full flex justify-between items-center py-2 px-4 text-sm hover:bg-gray-700">
                         <span>SCHOOL/DEPARTMENT</span>
@@ -114,7 +112,6 @@
                         <a href="manageSD.html" class="block py-2 px-4 text-xs hover:bg-gray-600">Manage School/Department</a>
                     </div>
                 </div>
-    
                 <div x-data="{ open: false }">
                     <button @click="open = !open" class="w-full flex justify-between items-center py-2 px-4 text-sm hover:bg-gray-700">
                         <span>EMPLOYEE DETAILS</span>
@@ -125,7 +122,6 @@
                         <a href="manageEmployee.html" class="block py-2 px-4 text-xs hover:bg-gray-600">View Employees</a>
                     </div>
                 </div>
-
                 <div class="border-t border-gray-700 mt-2 pt-2 md:hidden">
                     <a onclick="logout()" class="block py-2 px-4 text-sm hover:bg-gray-700 flex items-center space-x-2">
                          <i class="fas fa-sign-out-alt"></i>
@@ -135,5 +131,6 @@
             </div>
         </nav>
     </div>
+
 </body>
 </html>
