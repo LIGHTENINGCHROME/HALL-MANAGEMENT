@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Hall Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        .scrollable-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+        .calendar-grid, .day-view-grid {
+            display: grid;
+            grid-template-rows: auto;
+            min-height: 600px;
+        }
+        .calendar-grid {
+            grid-template-columns: 70px repeat(7, 1fr);
+        }
+        .day-view-grid {
+             grid-template-columns: 90px 1fr;
+        }
+        .month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+        }
+        .month-day {
+            min-height: 120px;
+            border-right: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .month-day:nth-child(7n) {
+            border-right: 0;
+        }
+        .time-slot {
+            grid-column: 1 / 2;
+        }
+        .day-column {
+            border-left: 1px solid #e5e7eb;
+            position: relative;
+        }
+        .calendar-event, .day-event {
+            background-color: #0B1940;
+            color: white;
+            border-left: 3px solid #14555F;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            margin: 1px 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+            line-height: 1.2;
+            position: absolute;
+            width: calc(100% - 8px);
+            z-index: 10;
+        }
+        .month-event {
+             background-color: #e0e7ff;
+             color: #3730a3;
+             border-left: 3px solid #4f46e5;
+             font-size: 0.75rem;
+             padding: 0 4px;
+             border-radius: 2px;
+             margin-top: 2px;
+             white-space: nowrap;
+             overflow: hidden;
+             text-overflow: ellipsis;
+        }
+        .highlight-today {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .month-day.today {
+            background-color: #ebf8ff;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="nav-placeholder"></div>
+    <script src="layout.js"></script>
+    
+    <!-- Main Content: Calendar View -->
+    <main class="flex-grow p-6">
+        <div class="container mx-auto bg-white p-4 rounded-lg shadow-xl" x-data="calendar()">
+            <!-- Calendar Header -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <button @click="navigate('prev')" class="p-2 rounded hover:bg-gray-200 text-gray-600"><i class="fas fa-chevron-left"></i></button>
+                    <button @click="navigate('next')" class="p-2 rounded hover:bg-gray-200 text-gray-600"><i class="fas fa-chevron-right"></i></button>
+                    <button @click="goToToday()" class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition-colors" :class="{'bg-blue-100 border-blue-300 font-semibold text-blue-700': !isViewingToday}">Today</button>
+                </div>
+                <h3 class="text-2xl font-semibold text-gray-800" x-text="headerDate"></h3>
+                <div class="flex items-center border border-gray-300 rounded-md">
+                    <button @click="view = 'month'" :class="{'bg-gray-800 text-white': view === 'month'}" class="px-4 py-2 rounded-l-md hover:bg-gray-200 transition-colors">Month</button>
+                    <button @click="view = 'week'" :class="{'bg-gray-800 text-white': view === 'week'}" class="px-4 py-2 border-l border-r hover:bg-gray-200 transition-colors">Week</button>
+                    <button @click="view = 'day'" :class="{'bg-gray-800 text-white': view === 'day'}" class="px-4 py-2 rounded-r-md hover:bg-gray-200 transition-colors">Day</button>
+                </div>
+            </div>
+
+            <!-- Week View -->
+            <template x-if="view === 'week'">
+                <div class="calendar-grid border-t border-gray-200">
+                    <div class="time-slot text-right pr-2 border-r border-gray-200">
+                        <div class="h-10"></div>
+                        <template x-for="time in timeSlots" :key="time">
+                             <div class="h-16 flex items-start justify-end pt-1 text-sm text-gray-500" x-text="time"></div>
+                        </template>
+                    </div>
+                    <template x-for="day in weekDays" :key="day.date">
+                        <div class="day-column" :class="{'highlight-today': day.isToday}">
+                            <div class="text-center font-semibold p-2 border-b" :class="{'text-blue-600': day.isToday}" x-text="day.label"></div>
+                            <div class="relative h-full border-t">
+                                <template x-for="event in getEventsForDay(day.date)" :key="event.id">
+                                     <div class="calendar-event" :style="getEventStyle(event)" x-text="event.title"></div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Month View -->
+            <template x-if="view === 'month'">
+                <div class="month-grid border-t border-l border-gray-200">
+                    <template x-for="dayName in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']" :key="dayName">
+                        <div class="text-center font-semibold p-2 border-b border-r border-gray-200" x-text="dayName"></div>
+                    </template>
+                    <template x-for="day in monthDays" :key="day.date">
+                        <div class="month-day p-2" :class="{'today': day.isToday}">
+                            <span :class="{'text-gray-400': !day.isCurrentMonth}" x-text="day.dayNumber"></span>
+                            <div class="mt-1">
+                                <template x-for="event in getVisibleEvents(day.date, 2)" :key="event.id">
+                                    <div class="month-event" x-text="event.title"></div>
+                                </template>
+                                <template x-if="getMoreEventsCount(day.date, 2) > 0">
+                                    <div class="text-xs text-blue-600 mt-1 cursor-pointer hover:underline" x-text="'+' + getMoreEventsCount(day.date, 2) + ' more'"></div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            
+            <!-- Day View -->
+            <template x-if="view === 'day'">
+                <div>
+                    <div class="text-center font-semibold p-2 border-b text-lg" x-text="currentDayName"></div>
+                    <div class="day-view-grid border-t border-gray-200">
+                        <div class="time-slot text-right pr-2 border-r border-gray-200">
+                             <template x-for="time in timeSlots" :key="time">
+                                 <div class="h-16 flex items-start justify-end pt-1 text-sm text-gray-500" x-text="time"></div>
+                            </template>
+                        </div>
+                        <div class="day-column relative border-t">
+                             <template x-for="event in getEventsForDay(currentDateISO)" :key="event.id">
+                                 <div class="day-event" :style="getEventStyle(event)" x-text="event.title"></div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[rgba(0,0,0,0.63)] text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        function calendar() {
+            return {
+                view: 'day',
+                currentDate: new Date(),
+                weekDays: [],
+                monthDays: [],
+                timeSlots: ['9:30AM', '10:30AM', '11:30AM', '12:30PM', '1:30PM', '2:30PM', '3:30PM', '4:30PM'],
+                events: [
+                    { id: 1, date: '2025-08-01', startTime: '11:30', endTime: '12:30', title: 'SH 321 - II IT' },
+                    { id: 2, date: '2025-08-01', startTime: '15:30', endTime: '16:30', title: 'SH 321 - II IT' },
+                    { id: 5, date: '2025-08-04', startTime: '11:30', endTime: '12:30', title: 'SH 321 - II IT' },
+                    { id: 6, date: '2025-08-04', startTime: '14:30', endTime: '15:30', title: 'SH 346 - II IT' },
+                    { id: 7, date: '2025-08-04', startTime: '15:30', endTime: '16:30', title: 'SH 321 - II IT' },
+                    { id: 8, date: '2025-08-05', startTime: '09:30', endTime: '10:30', title: 'SH 346 - II IT' },
+                    { id: 9, date: '2025-08-06', startTime: '14:30', endTime: '15:30', title: 'SH 321 - II floor(B.Tech.II year) - CSES_303' },
+                    { id: 10, date: '2025-08-06', startTime: '15:30', endTime: '16:30', title: 'SH 321 - II floor(B.Tech.II year) - CSES_303' },
+                ],
+
+                init() {
+                    this.$watch('view', () => this.updateCalendar());
+                    this.updateCalendar();
+                },
+
+                updateCalendar() {
+                    if (this.view === 'week') this.generateWeek();
+                    if (this.view === 'month') this.generateMonth();
+                },
+
+                get headerDate() {
+                    if (this.view === 'month') {
+                        return this.currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                    }
+                    if (this.view === 'day') {
+                        return this.currentDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+                    }
+                    if (this.view === 'week' && this.weekDays.length > 0) {
+                        const startOfWeek = new Date(this.weekDays[0].date + 'T00:00:00');
+                        const endOfWeek = new Date(this.weekDays[6].date + 'T00:00:00');
+                        const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                        const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'long' });
+                        if (startMonth === endMonth) {
+                            return `${startOfWeek.getDate()} - ${endOfWeek.getDate()} ${startMonth}, ${startOfWeek.getFullYear()}`;
+                        }
+                        return `${startOfWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - ${endOfWeek.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}, ${endOfWeek.getFullYear()}`;
+                    }
+                    return '';
+                },
+
+                get currentDayName() {
+                    return this.currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+                },
+
+                get currentDateISO() {
+                    return this.currentDate.toISOString().split('T')[0];
+                },
+
+                get isViewingToday() {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    if (this.view === 'day') {
+                        const current = new Date(this.currentDate);
+                        current.setHours(0, 0, 0, 0);
+                        return current.getTime() === today.getTime();
+                    }
+                    if (this.view === 'week') {
+                        return this.weekDays.some(day => day.date === today.toISOString().split('T')[0]);
+                    }
+                    if (this.view === 'month') {
+                        return this.currentDate.getFullYear() === today.getFullYear() &&
+                               this.currentDate.getMonth() === today.getMonth();
+                    }
+                    return false;
+                },
+
+                generateWeek() {
+                    const startOfWeek = new Date(this.currentDate);
+                    const dayOfWeek = startOfWeek.getDay();
+                    const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                    startOfWeek.setDate(diff);
+                    this.weekDays = [];
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    for (let i = 0; i < 7; i++) {
+                        const day = new Date(startOfWeek);
+                        day.setDate(startOfWeek.getDate() + i);
+                        this.weekDays.push({
+                            label: `${day.toLocaleDateString('en-US', { weekday: 'short' })} ${day.getDate()}/${day.getMonth() + 1}`,
+                            date: day.toISOString().split('T')[0],
+                            isToday: day.getTime() === today.getTime()
+                        });
+                    }
+                },
+
+                generateMonth() {
+                    this.monthDays = [];
+                    const year = this.currentDate.getFullYear();
+                    const month = this.currentDate.getMonth();
+                    const firstDayOfMonth = new Date(year, month, 1);
+                    const lastDayOfMonth = new Date(year, month + 1, 0);
+                    const firstDayOfWeek = firstDayOfMonth.getDay() === 0 ? 6 : firstDayOfMonth.getDay() - 1;
+                    const lastDayOfPrevMonth = new Date(year, month, 0).getDate();
+                    for (let i = firstDayOfWeek; i > 0; i--) {
+                        const day = lastDayOfPrevMonth - i + 1;
+                        const date = new Date(year, month - 1, day);
+                        this.monthDays.push({ date: date.toISOString().split('T')[0], dayNumber: day, isCurrentMonth: false });
+                    }
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
+                        const date = new Date(year, month, i);
+                        this.monthDays.push({
+                            date: date.toISOString().split('T')[0],
+                            dayNumber: i,
+                            isCurrentMonth: true,
+                            isToday: date.getTime() === today.getTime()
+                        });
+                    }
+                    const lastDayOfWeek = lastDayOfMonth.getDay() === 0 ? 6 : lastDayOfMonth.getDay() - 1;
+                    let day = 1;
+                    for (let i = lastDayOfWeek; i < 6; i++) {
+                         const date = new Date(year, month + 1, day);
+                         this.monthDays.push({ date: date.toISOString().split('T')[0], dayNumber: day, isCurrentMonth: false });
+                         day++;
+                    }
+                },
+                
+                navigate(direction) {
+                    const increment = direction === 'next' ? 1 : -1;
+                    let newDate = new Date(this.currentDate);
+                    if (this.view === 'week') {
+                        newDate.setDate(newDate.getDate() + (7 * increment));
+                    }
+                    if (this.view === 'month') {
+                        newDate.setMonth(newDate.getMonth() + increment);
+                    }
+                     if (this.view === 'day') {
+                        newDate.setDate(newDate.getDate() + increment);
+                    }
+                    this.currentDate = newDate;
+                    this.updateCalendar();
+                },
+
+                goToToday() {
+                    this.currentDate = new Date();
+                    this.updateCalendar();
+                },
+
+                getEventsForDay(date) {
+                    return this.events.filter(e => e.date === date);
+                },
+
+                getVisibleEvents(date, limit) {
+                    return this.getEventsForDay(date).slice(0, limit);
+                },
+
+                getMoreEventsCount(date, limit) {
+                    return Math.max(0, this.getEventsForDay(date).length - limit);
+                },
+
+                getEventStyle(event) {
+                    const calendarStartMinutes = 9 * 60 + 30;
+                    const eventStartParts = event.startTime.split(':');
+                    const eventStartMinutes = parseInt(eventStartParts[0]) * 60 + parseInt(eventStartParts[1]);
+                    const eventEndParts = event.endTime.split(':');
+                    const eventEndMinutes = parseInt(eventEndParts[0]) * 60 + parseInt(eventEndParts[1]);
+                    const minutesFromTop = eventStartMinutes - calendarStartMinutes;
+                    const durationMinutes = eventEndMinutes - eventStartMinutes;
+                    const top = (minutesFromTop / 60) * 4;
+                    const height = (durationMinutes / 60) * 4;
+                    return { top: `${top}rem`, height: `${height}rem` };
+                }
+            }
+        }
+    </script>
+</body>
+</html>

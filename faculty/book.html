@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Hall</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        .time-slot-btn.active, .slot-selected {
+            background-color: #3b82f6 !important; /* Blue-500 */
+            color: white !important;
+            border-color: #3b82f6 !important;
+        }
+        .booking-type-btn.active {
+            background-color: #4f46e5; /* Indigo-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .day-btn.active {
+            background-color: #16a34a; /* Green-600 */
+            color: white;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 8px;
+        }
+        .slot {
+            width: 100%;
+            height: 2.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .slot-available-weekday { 
+            background-color: #bbf7d0; /* Darker green for weekdays */
+            border: 1px solid #16a34a; 
+        }
+        .slot-available-weekday:hover { 
+            background-color: #86efac; 
+        }
+        .slot-available-weekend { 
+            background-color: #dcfce7; /* Lighter green for weekends */
+            border: 1px solid #86efac; 
+        }
+        .slot-available-weekend:hover { 
+            background-color: #bbf7d0; 
+        }
+        .slot-booked { 
+            background-color: #fee2e2; 
+            border: 1px solid #fca5a5; 
+            cursor: not-allowed; 
+        }
+        .slot-pending { 
+            background-color: #fef9c3; 
+            border: 1px solid #fde047; 
+            cursor: not-allowed; 
+        }
+        .slot-past { 
+            background-color: #e5e7eb; 
+            border: 1px solid #d1d5db; 
+            cursor: not-allowed; 
+        }
+        .date-header-day { 
+            color: #ef4444; /* Red for Sundays */
+        }
+        .date-header-saturday {
+            color: #f97316; /* Orange for Saturdays */
+        }
+
+        /* Hide scrollbar for the header, body will show it */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        [x-cloak] { display: none !important; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="header-placeholder"></div>
+    <div id="nav-placeholder"></div>
+
+    <main class="flex-grow p-4 sm:p-6">
+        <div class="container mx-auto" x-data="bookingForm()" @mouseup.window="stopDrag()">
+            <div class="bg-[rgba(0,0,0,0.15)] p-4 sm:p-8 rounded-lg shadow-xl">
+                <h2 class="text-3xl font-bold text-center text-white mb-8">HALL BOOKING</h2>
+                
+                <template x-if="isLoading">
+                    <p class="text-center text-white py-10">Loading schedule...</p>
+                </template>
+                <div x-show="!isLoading && errorMessage" class="text-center text-red-400 bg-red-100 p-4 rounded-md" x-text="errorMessage"></div>
+
+                <template x-if="!isLoading && !errorMessage">
+                    <div x-cloak>
+                        <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Hall Availability</h3>
+                            <div class="flex justify-between items-center mb-4">
+                                <button @click="navigate('prev')" class="p-2 rounded-full hover:bg-gray-200 transition">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <h4 class="text-lg font-bold" x-text="`${calendar.monthName} ${calendar.year}`"></h4>
+                                <button @click="navigate('next')" class="p-2 rounded-full hover:bg-gray-200 transition">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
+                            <div class="calendar-grid">
+                                <div></div>
+
+                                <div class="overflow-x-auto hide-scrollbar"
+                                     x-ref="headerScroller"
+                                     @scroll="$refs.bodyScroller.scrollLeft = $refs.headerScroller.scrollLeft">
+                                    <div :style="`display: grid; grid-template-columns: repeat(${calendar.days.length}, minmax(50px, 1fr)); gap: 4px;`" class="pb-2">
+                                        <template x-for="day in calendar.days" :key="`${calendar.year}-${calendar.month}-${day.date}`">
+                                            <div class="text-center">
+                                                <div class="text-sm font-semibold" 
+                                                     :class="{
+                                                        'date-header-day': day.dayName === 'Sun',
+                                                        'date-header-saturday': day.dayName === 'Sat'
+                                                     }" 
+                                                     x-text="day.date"></div>
+                                                <div class="text-xs text-gray-500" 
+                                                     :class="{
+                                                        'date-header-day': day.dayName === 'Sun',
+                                                        'date-header-saturday': day.dayName === 'Sat'
+                                                     }" 
+                                                     x-text="day.dayName"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-1 pr-4">
+                                    <template x-for="time in timeSlots" :key="time">
+                                        <div class="text-sm text-right text-gray-600 h-10 flex items-center justify-end" x-text="formatTimeForDisplay(time)"></div>
+                                    </template>
+                                </div>
+
+                                <div class="grid grid-cols-1 overflow-x-auto"
+                                     x-ref="bodyScroller"
+                                     @scroll="$refs.headerScroller.scrollLeft = $refs.bodyScroller.scrollLeft">
+                                    <template x-for="time in timeSlots" :key="time">
+                                        <div :style="`display: grid; grid-template-columns: repeat(${calendar.days.length}, minmax(50px, 1fr)); gap: 4px;`">
+                                            <template x-for="day in calendar.days" :key="`${calendar.year}-${calendar.month}-${day.date}-${time}`">
+                                                <button type="button" class="slot" :class="getSlotClasses(day, time)" @mousedown.prevent="startDrag(day, time)" @mouseenter="dragOver(day, time)"></button>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-center items-center space-x-4 mt-4 text-sm">
+                                <div class="flex items-center"><span class="h-4 w-4 rounded-sm mr-2 slot-available-weekday"></span> Available (Weekday)</div>
+                                <div class="flex items-center"><span class="h-4 w-4 rounded-sm mr-2 slot-available-weekend"></span> Available (Weekend)</div>
+                                <div class="flex items-center"><span class="h-4 w-4 rounded-sm mr-2 slot-pending"></span> Pending</div>
+                                <div class="flex items-center"><span class="h-4 w-4 rounded-sm mr-2 slot-booked"></span> Booked</div>
+                                <div class="flex items-center"><span class="h-4 w-4 rounded-sm mr-2 slot-past"></span> Past</div>
+                                <div class="flex items-center"><span class="h-4 w-4 rounded-sm mr-2 slot-selected"></span> Selected</div>
+                            </div>
+                        </section>
+
+                        <form id="bookingForm" @submit.prevent="submitBooking" class="space-y-8">
+                            <section class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Booking Details</h3>
+                                <div class="mb-6">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">BOOKING TYPE</label>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <button type="button" @click="bookingType = 'INDIVIDUAL'" :class="{'active': bookingType === 'INDIVIDUAL'}" class="booking-type-btn w-full py-3 px-4 text-center rounded-md text-sm font-semibold transition-all duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">Individual</button>
+                                        <button type="button" @click="bookingType = 'SEMESTER'" :class="{'active': bookingType === 'SEMESTER'}" class="booking-type-btn w-full py-3 px-4 text-center rounded-md text-sm font-semibold transition-all duration-200 bg-gray-200 text-gray-700 hover:bg-gray-300">Semester</button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                    <div>
+                                        <label for="start_date" class="block text-gray-600 text-sm font-medium mb-2">FROM DATE</label>
+                                        <input type="date" id="start_date" x-model="startDate" class="block w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                                    </div>
+                                    <div>
+                                        <label for="end_date" class="block text-gray-600 text-sm font-medium mb-2">TO DATE</label>
+                                        <input type="date" id="end_date" x-model="endDate" class="block w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                                    </div>
+                                </div>
+                                <div class="mb-6">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">CHOOSE SLOT(S)</label>
+                                    <div class="border rounded-lg p-4">
+                                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                                            <template x-for="time in timeSlots" :key="time">
+                                                <button type="button" @click="toggleTime(time)" :class="{'active': selectedTimes.includes(time)}" class="time-slot-btn border p-2 rounded" x-text="formatTimeForDisplay(time)"></button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div x-show="bookingType === 'SEMESTER'" x-transition class="mb-6">
+                                    <label class="block text-gray-600 text-sm font-medium mb-2">SELECT DAYS OF THE WEEK</label>
+                                    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                                        <template x-for="day in daysOfWeek" :key="day.value">
+                                            <button 
+                                                type="button" 
+                                                @click="toggleDay(day.value)" 
+                                                :class="{'active': selectedDays.includes(day.value)}" 
+                                                class="day-btn border p-2 rounded"
+                                                x-text="day.label">
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">Purpose of Booking</h3>
+                                <div>
+                                    <label for="purpose" class="block text-gray-600 text-sm font-medium mb-2">PURPOSE / EVENT NAME</label>
+                                    <textarea id="purpose" x-model="purpose" placeholder="e.g., Department Seminar, Guest Lecture on AI" rows="3" class="block w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required></textarea>
+                                </div>
+                                <div class="mt-6">
+                                    <label for="class_code" class="block text-gray-600 text-sm font-medium mb-2">CLASS CODE (OPTIONAL)</label>
+                                    <input type="text" id="class_code" x-model="classCode" placeholder="e.g., CS-501" class="block w-full p-3 bg-white border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                            </section>
+                            <div class="flex justify-end space-x-4 pt-6">
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">SUBMIT REQUEST</button>
+                                <button type="reset" @click="resetForm" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-8 rounded-md shadow-lg transition-colors duration-300">CLEAR</button>
+                            </div>
+                        </form>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+    
+    <div x-data x-show="$store.modal.show" @click.away="$store.modal.close()" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm text-center">
+            <div x-show="$store.modal.isSuccess" class="text-5xl mb-4 text-green-500"><i class="fas fa-check-circle"></i></div>
+            <div x-show="!$store.modal.isSuccess" class="text-5xl mb-4 text-red-500"><i class="fas fa-times-circle"></i></div>
+            <p class="text-lg font-semibold text-gray-800" x-text="$store.modal.message" role="alert"></p>
+            <button @click="$store.modal.close()" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-md">OK</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('modal', {
+                show: false,
+                isSuccess: false,
+                message: '',
+                open(isSuccess, message) { this.isSuccess = isSuccess; this.message = message; this.show = true; },
+                close() { this.show = false; }
+            });
+
+            Alpine.data('bookingForm', () => ({
+                isLoading: true,
+                errorMessage: '',
+                hallId: null,
+                bookingType: 'INDIVIDUAL',
+                startDate: '',
+                endDate: '',
+                purpose: '',
+                classCode: '',
+                selectedTimes: [],
+                selectedDays: [],
+                currentDate: new Date(),
+                calendar: { year: 0, month: 0, monthName: '', days: [] },
+                processedBookings: {},
+                isDragging: false,
+                dragSelectionMode: 'add',
+                dragDate: null,
+                timeSlots: ['09:30', '10:30', '11:30', '12:30', '13:30', '14:30', '15:30', '16:30'],
+                daysOfWeek: [
+                    { label: 'Sun', value: 'SUNDAY' }, { label: 'Mon', value: 'MONDAY' },
+                    { label: 'Tue', value: 'TUESDAY' }, { label: 'Wed', value: 'WEDNESDAY' },
+                    { label: 'Thu', value: 'THURSDAY' }, { label: 'Fri', value: 'FRIDAY' },
+                    { label: 'Sat', value: 'SATURDAY' }
+                ],
+                
+                async init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    this.hallId = urlParams.get('hall_id');
+                    if (!this.hallId) {
+                        this.errorMessage = 'No Hall ID specified.';
+                        this.isLoading = false;
+                        return;
+                    }
+                    try {
+                        await this.fetchScheduleData(this.hallId);
+                        this.generateCalendar();
+                        this.setTodaysDate();
+                    } catch (error) {
+                        this.errorMessage = `Failed to load schedule: ${error.message}`;
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async fetchWithAuth(url, options = {}) {
+                    const headers = getAuthHeaders();
+                    if (!headers) { logout(); throw new Error('User not authenticated'); }
+                    const config = { ...options, headers: {...headers, ...options.headers} };
+                    const response = await fetch(url, config);
+                    if (response.status === 401) { logout(); throw new Error('Authentication failed'); }
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+                        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                },
+
+                async fetchScheduleData(hallId) {
+                    const url = AppConfig.apiBaseUrl + AppConfig.endpoints.getHallSchedule + hallId;
+                    const scheduleData = await this.fetchWithAuth(url);
+                    this.processedBookings = {};
+                    if (scheduleData.data) {
+                        scheduleData.data.forEach(booking => {
+                            let currentTime = new Date(booking.start_time);
+                            const endDate = new Date(booking.end_time);
+                            
+                            while (currentTime <= endDate) {
+                                const dateKey = currentTime.toISOString().split('T')[0];
+                                const hours = String(currentTime.getUTCHours()).padStart(2, '0');
+                                const minutes = String(currentTime.getUTCMinutes()).padStart(2, '0');
+                                const timeKey = `${hours}:${minutes}`;
+
+                                if (this.timeSlots.includes(timeKey)) {
+                                    if (!this.processedBookings[dateKey]) this.processedBookings[dateKey] = {};
+                                    this.processedBookings[dateKey][timeKey] = 'booked';
+                                }
+                                
+                                currentTime.setUTCHours(currentTime.getUTCHours() + 1);
+                            }
+                        });
+                    }
+                },
+
+                setTodaysDate() {
+                    const today = new Date().toISOString().split('T')[0];
+                    this.startDate = today;
+                    this.endDate = today;
+                },
+
+                generateCalendar() {
+                    this.calendar.year = this.currentDate.getFullYear();
+                    this.calendar.month = this.currentDate.getMonth();
+                    this.calendar.monthName = this.currentDate.toLocaleString('default', { month: 'long' });
+                    const daysInMonth = new Date(this.calendar.year, this.calendar.month + 1, 0).getDate();
+                    this.calendar.days = [];
+                    
+                    // Generate days with proper date objects to avoid confusion
+                    for (let i = 1; i <= daysInMonth; i++) {
+                        const dateObj = new Date(this.calendar.year, this.calendar.month, i);
+                        this.calendar.days.push({
+                            date: i,
+                            dayName: dateObj.toLocaleString('default', { weekday: 'short' }),
+                            dayIndex: dateObj.getDay(), // 0 = Sunday, 6 = Saturday
+                            fullDate: dateObj
+                        });
+                    }
+                },
+                
+                navigate(direction) {
+                    if (direction === 'next') {
+                        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+                    } else {
+                        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+                    }
+                    this.generateCalendar();
+                },
+
+                getSlotStatus(day, time) {
+                    const today = new Date(); 
+                    today.setHours(0, 0, 0, 0);
+                    
+                    // Create proper date object for the slot
+                    const slotDate = new Date(this.calendar.year, this.calendar.month, day.date);
+                    slotDate.setHours(0, 0, 0, 0);
+                    
+                    const dateString = `${this.calendar.year}-${String(this.calendar.month + 1).padStart(2, '0')}-${String(day.date).padStart(2, '0')}`;
+                    
+                    // Check if slot is in the past
+                    if (slotDate < today) return 'past';
+
+                    // Check for semester booking selection
+                    if (this.bookingType === 'SEMESTER' && this.startDate && this.endDate && this.selectedDays.length > 0) {
+                        const start = new Date(this.startDate); 
+                        start.setHours(0,0,0,0);
+                        const end = new Date(this.endDate); 
+                        end.setHours(0,0,0,0);
+                        const selectedDayIndexes = this.selectedDays.map(d => this.daysOfWeek.findIndex(dw => dw.value === d));
+                        
+                        if (slotDate >= start && slotDate <= end && selectedDayIndexes.includes(day.dayIndex) && this.selectedTimes.includes(time)) {
+                            return 'selected';
+                        }
+                    }
+
+                    // Check for individual booking selection
+                    if (this.bookingType === 'INDIVIDUAL' && this.startDate === dateString && this.selectedTimes.includes(time)) {
+                        return 'selected';
+                    }
+                                            
+                    // Check existing bookings
+                    const bookingStatus = this.processedBookings[dateString] ? this.processedBookings[dateString][time] : null;
+                    if (bookingStatus) return bookingStatus;
+                    
+                    // Return available status (differentiate weekends from weekdays)
+                    return day.dayIndex === 0 || day.dayIndex === 6 ? 'available-weekend' : 'available-weekday';
+                },
+
+                getSlotClasses(day, time) {
+                    const status = this.getSlotStatus(day, time);
+                    return {
+                        'slot-past': status === 'past',
+                        'slot-booked': status === 'booked',
+                        'slot-pending': status === 'pending',
+                        'slot-available-weekday': status === 'available-weekday',
+                        'slot-available-weekend': status === 'available-weekend',
+                        'slot-selected': status === 'selected',
+                    };
+                },
+
+                startDrag(day, time) {
+                    const status = this.getSlotStatus(day, time);
+                    if (status !== 'available-weekday' && status !== 'available-weekend' && status !== 'selected') return;
+                    
+                    if (this.bookingType === 'SEMESTER') return;
+                    this.isDragging = true;
+                    const dateString = `${this.calendar.year}-${String(this.calendar.month + 1).padStart(2, '0')}-${String(day.date).padStart(2, '0')}`;
+                    if (this.startDate !== dateString) {
+                        this.selectedTimes = [];
+                        this.startDate = dateString;
+                        this.endDate = dateString;
+                    }
+                    this.dragDate = dateString;
+                    this.dragSelectionMode = (status === 'selected') ? 'remove' : 'add';
+                    this.applyDragSelection(day, time);
+                },
+
+                dragOver(day, time) {
+                    if (this.isDragging) this.applyDragSelection(day, time);
+                },
+
+                stopDrag() {
+                    this.isDragging = false;
+                    this.dragDate = null;
+                },
+
+                applyDragSelection(day, time) {
+                    const dateString = `${this.calendar.year}-${String(this.calendar.month + 1).padStart(2, '0')}-${String(day.date).padStart(2, '0')}`;
+                    if (this.dragDate !== dateString) return;
+                    const status = this.getSlotStatus(day, time);
+                    const timeIndex = this.selectedTimes.indexOf(time);
+                    if (this.dragSelectionMode === 'add') {
+                        if ((status === 'available-weekday' || status === 'available-weekend') && timeIndex === -1) {
+                            this.selectedTimes.push(time);
+                        }
+                    } else {
+                        if (timeIndex !== -1) this.selectedTimes.splice(timeIndex, 1);
+                    }
+                    this.selectedTimes.sort();
+                },
+
+                toggleTime(time) {
+                    const index = this.selectedTimes.indexOf(time);
+                    if (index === -1) this.selectedTimes.push(time);
+                    else this.selectedTimes.splice(index, 1);
+                    this.selectedTimes.sort();
+                },
+
+                toggleDay(day) {
+                    const index = this.selectedDays.indexOf(day);
+                    if (index === -1) this.selectedDays.push(day);
+                    else this.selectedDays.splice(index, 1);
+                },
+
+                formatTimeForDisplay(time) {
+                    const [hour, minute] = time.split(':');
+                    const h = parseInt(hour);
+                    const suffix = h >= 12 ? 'pm' : 'am';
+                    const displayHour = h % 12 === 0 ? 12 : h % 12;
+                    return `${String(displayHour).padStart(2, '0')}:${minute}${suffix}`;
+                },
+                
+                resetForm() {
+                    this.bookingType = 'INDIVIDUAL';
+                    this.setTodaysDate();
+                    this.purpose = '';
+                    this.classCode = '';
+                    this.selectedTimes = [];
+                    this.selectedDays = [];
+                },
+
+                async submitBooking() {
+                    if (!this.hallId) { Alpine.store('modal').open(false, 'Hall ID is missing.'); return; }
+                    if (!this.startDate || !this.endDate) { Alpine.store('modal').open(false, 'Please select a start and end date.'); return; }
+                    if (this.selectedTimes.length === 0) { Alpine.store('modal').open(false, 'Please select at least one time slot.'); return; }
+                    if (this.bookingType === 'SEMESTER' && this.selectedDays.length === 0) { Alpine.store('modal').open(false, 'Please select at least one day for a semester booking.'); return; }
+                    if (!this.purpose.trim()) { Alpine.store('modal').open(false, 'Please provide a purpose for the booking.'); return; }
+
+                    const lastSlotStartTime = this.selectedTimes[this.selectedTimes.length - 1];
+                    const [hour, minute] = lastSlotStartTime.split(':').map(Number);
+
+                    const tempDate = new Date();
+                    tempDate.setHours(hour, minute, 0, 0);
+                    tempDate.setHours(tempDate.getHours() + 1);
+
+                    const endHour = String(tempDate.getHours()).padStart(2, '0');
+                    const endMinute = String(tempDate.getMinutes()).padStart(2, '0');
+                    const actualEndTime = `${endHour}:${endMinute}`;
+
+                    const payload = {
+                        hall_id: this.hallId,
+                        purpose: this.purpose.trim(),
+                        booking_type: this.bookingType,
+                        start_date: new Date(this.startDate).toISOString(),
+                        end_date: new Date(this.endDate).toISOString(),
+                        start_time: this.selectedTimes[0],
+                        end_time: actualEndTime,
+                    };
+
+                    if (this.classCode.trim()) payload.class_code = this.classCode.trim();
+                    if (this.bookingType === 'SEMESTER') payload.days_of_week = this.selectedDays;
+                    
+                    try {
+                        const url = AppConfig.apiBaseUrl + AppConfig.endpoints.requestBooking;
+                        const response = await fetch(url, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(payload) });
+                        
+                        if (!response.ok) {
+                            if (response.status === 401) { logout(); return; }
+                            let errorMsg = `Request failed: ${response.statusText}`;
+                            try {
+                                const errorResult = await response.json();
+                                if(errorResult.message) errorMsg = errorResult.message;
+                            } catch (e) { console.error("Could not parse error response.", e); }
+                            throw new Error(errorMsg);
+                        }
+                        
+                        const result = await response.json();
+                        Alpine.store('modal').open(true, result.message || 'Booking request submitted successfully!');
+                        this.resetForm();
+                        this.fetchScheduleData(this.hallId);
+                    } catch (error) {
+                        Alpine.store('modal').open(false, error.message);
+                    }
+                }
+            }));
+        });
+    </script>
+    <script src="layout.js"></script>
+</body>
+</html>

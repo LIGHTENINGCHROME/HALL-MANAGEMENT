@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        .scrollable-dropdown::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        .scrollable-dropdown::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 10px;
+        }
+        .table-header-icon {
+            color: #4b5563; /* gray-600 */
+        }
+        .filter-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-btn.active {
+            background-color: #0B1940;
+            color: white;
+            border-color: #0B1940;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <div id="nav-placeholder"></div>
+    <script src="layout.js"></script>
+    
+    <!-- Main Content -->
+    <main class="flex-grow p-6" x-data="myBookings()">
+        <div class="container mx-auto bg-white p-6 rounded-lg shadow-xl">
+            <h2 class="text-3xl font-bold text-center text-indigo-900 mb-6">My Bookings</h2>
+            
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex space-x-2">
+                    <button class="bg-white border border-blue-600 text-blue-600 px-4 py-2 rounded-md shadow hover:bg-blue-50 disabled:opacity-50 flex items-center" :disabled="selectedBookings.length === 0">
+                        <i class="fas fa-edit mr-2"></i>Modify
+                    </button>
+                    <button @click="selectedBookings = []" class="bg-white border border-gray-600 text-gray-600 px-4 py-2 rounded-md shadow hover:bg-gray-100 disabled:opacity-50 flex items-center" :disabled="selectedBookings.length === 0">
+                        <i class="fas fa-ban mr-2"></i>Cancel
+                    </button>
+                </div>
+                <div class="space-x-2">
+                    <button class="bg-yellow-500 text-white px-4 py-2 rounded-md shadow hover:bg-yellow-600">Past Booking</button>
+                    <button @click="clearFilters()" class="bg-white border border-gray-400 text-gray-700 px-4 py-2 rounded-md shadow hover:bg-gray-100">Clear Filters</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">Select</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                <div class="flex items-center cursor-pointer" @click="showDateFilterModal = true">
+                                    Booked On <i class="fas fa-filter ml-2 table-header-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                <div class="flex items-center cursor-pointer" @click="showHallFilterModal = true">
+                                    Hall Details <i class="fas fa-filter ml-2 table-header-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                <div class="flex items-center cursor-pointer" @click="showPurposeFilterModal = true">
+                                    Purpose <i class="fas fa-filter ml-2 table-header-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                <div class="flex items-center cursor-pointer" @click="showDateTimeFilterModal = true">
+                                    Date & Time <i class="fas fa-filter ml-2 table-header-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-800 uppercase tracking-wider">
+                                <div class="flex items-center cursor-pointer" @click="showStatusFilterModal = true">
+                                    Status <i class="fas fa-filter ml-2 table-header-icon"></i>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <template x-if="filteredBookings.length > 0">
+                            <template x-for="booking in filteredBookings" :key="booking.id">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <input type="checkbox" :value="booking.id" x-model="selectedBookings" class="rounded border-gray-300">
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" x-text="booking.bookedOn"></div>
+                                        <div class="text-sm text-blue-600">
+                                            <a href="#" class="hover:underline" x-text="booking.bookingId"></a>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900" x-text="booking.hall.type"></div>
+                                        <div class="text-sm font-bold text-blue-600" x-text="booking.hall.name"></div>
+                                        <div class="text-sm text-gray-500" x-text="booking.hall.department"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900" x-text="booking.purpose.type"></div>
+                                        <div class="text-sm text-gray-500" x-text="booking.purpose.detail"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900" x-text="booking.dateTime.date"></div>
+                                        <div class="text-sm font-bold text-gray-900" x-text="booking.dateTime.time"></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                                              :class="{ 
+                                                  'bg-red-100 text-red-800': booking.status === 'Cancelled' || booking.status === 'Rejected',
+                                                  'bg-green-100 text-green-800': booking.status === 'Approved',
+                                                  'bg-yellow-100 text-yellow-800': booking.status.includes('Pending')
+                                              }"
+                                              x-text="booking.status">
+                                        </span>
+                                        <div class="text-sm text-blue-600 mt-1" x-show="booking.reason">
+                                            <a href="#" class="hover:underline" x-text="'(' + booking.reason + ')'"></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                        <template x-if="filteredBookings.length === 0">
+                            <tr>
+                                <td colspan="6" class="text-center py-10 text-gray-500">
+                                    No pending requests.
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Date Filter Modal -->
+        <div x-show="showDateFilterModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30" @click.away="showDateFilterModal = false">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Filter by Booked Date</h3>
+                    <button @click="showDateFilterModal = false" class="text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="fromDate" class="block text-sm font-medium text-gray-700">From Date:</label>
+                        <input type="date" id="fromDate" x-model="filters.fromDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                    <div>
+                        <label for="toDate" class="block text-sm font-medium text-gray-700">To Date:</label>
+                        <input type="date" id="toDate" x-model="filters.toDate" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button @click="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hall Filter Modal -->
+        <div x-show="showHallFilterModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30" @click.away="showHallFilterModal = false">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Filter Booking Details</h3>
+                    <button @click="showHallFilterModal = false" class="text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Hall Type:</label>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <button @click="filters.hallType = 'Seminar Hall'" :class="{'active': filters.hallType === 'Seminar Hall'}" class="filter-btn border p-2 rounded text-center">Seminar Hall</button>
+                            <button @click="filters.hallType = 'Auditorium'" :class="{'active': filters.hallType === 'Auditorium'}" class="filter-btn border p-2 rounded text-center">Auditorium</button>
+                            <button @click="filters.hallType = 'Lecture Hall'" :class="{'active': filters.hallType === 'Lecture Hall'}" class="filter-btn border p-2 rounded text-center">Lecture Hall</button>
+                            <button @click="filters.hallType = 'Conference Hall'" :class="{'active': filters.hallType === 'Conference Hall'}" class="filter-btn border p-2 rounded text-center">Conference Hall</button>
+                        </div>
+                    </div>
+                     <div>
+                        <label for="hallName" class="block text-sm font-medium text-gray-700">Hall Name:</label>
+                        <select id="hallName" x-model="filters.hallName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                            <option value="">-- Select Hall --</option>
+                            <template x-for="hall in uniqueHallNames" :key="hall">
+                                <option :value="hall" x-text="hall"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button @click="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purpose Filter Modal -->
+        <div x-show="showPurposeFilterModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30" @click.away="showPurposeFilterModal = false">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Filter by Purpose</h3>
+                    <button @click="showPurposeFilterModal = false" class="text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Purpose:</label>
+                        <div class="flex space-x-2 mt-2">
+                            <button @click="filters.purposeType = 'Event'" :class="{'active': filters.purposeType === 'Event'}" class="filter-btn border p-2 rounded text-center flex-1">Event</button>
+                            <button @click="filters.purposeType = 'Class'" :class="{'active': filters.purposeType === 'Class'}" class="filter-btn border p-2 rounded text-center flex-1">Class</button>
+                        </div>
+                    </div>
+                    <div x-show="filters.purposeType === 'Event'" x-transition>
+                        <label for="eventType" class="block text-sm font-medium text-gray-700">Event Type:</label>
+                        <select id="eventType" x-model="filters.eventType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                            <option value="">-- Select Event Name --</option>
+                            <option value="Guest Lectures, Seminars">Guest Lectures, Seminars</option>
+                            <option value="Meetings, Ceremonies">Meetings, Ceremonies</option>
+                            <option value="Workshops, Training">Workshops, Training</option>
+                            <option value="Conferences, Symposiums">Conferences, Symposiums</option>
+                            <option value="Examinations, Admissions, Interviews">Examinations, Admissions, Interviews</option>
+                        </select>
+                    </div>
+                    <div x-show="filters.purposeType === 'Class'" x-transition>
+                        <label for="courseName" class="block text-sm font-medium text-gray-700">Course Name:</label>
+                        <select id="courseName" x-model="filters.courseName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                            <option value="">-- Select Course Name --</option>
+                            <option value="Bsc CS 2">Bsc CS 2</option>
+                            <option value="Test II">Test II</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button @click="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Date & Time Filter Modal -->
+        <div x-show="showDateTimeFilterModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30" @click.away="showDateTimeFilterModal = false">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Filter by Date & Time</h3>
+                    <button @click="showDateTimeFilterModal = false" class="text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="startDateTime" class="block text-sm font-medium text-gray-700">Start Date:</label>
+                        <input type="date" id="startDateTime" x-model="filters.startDateTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                    </div>
+                    <div>
+                        <label for="endDateTime" class="block text-sm font-medium text-gray-700">End Date:</label>
+                        <input type="date" id="endDateTime" x-model="filters.endDateTime" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button @click="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Filter Modal -->
+        <div x-show="showStatusFilterModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-30" @click.away="showStatusFilterModal = false">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">Filter by Status</h3>
+                    <button @click="showStatusFilterModal = false" class="text-gray-500 hover:text-gray-800">&times;</button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status:</label>
+                        <select id="status" x-model="filters.status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2">
+                            <option value="">-- Select Status --</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Pending to Forward">Pending to Forward</option>
+                            <option value="Pending to Approve">Pending to Approve</option>
+                            <option value="Cancelled">Cancelled</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 text-right">
+                    <button @click="applyFilters()" class="bg-blue-600 text-white px-4 py-2 rounded-md shadow hover:bg-blue-700">Apply Filter</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[rgba(0,0,0,0.63)] text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        function myBookings() {
+            return {
+                selectedBookings: [],
+                showDateFilterModal: false,
+                showHallFilterModal: false,
+                showPurposeFilterModal: false,
+                showDateTimeFilterModal: false,
+                showStatusFilterModal: false,
+                filters: {
+                    fromDate: '',
+                    toDate: '',
+                    hallType: '',
+                    hallName: '',
+                    purposeType: '',
+                    eventType: '',
+                    courseName: '',
+                    startDateTime: '',
+                    endDateTime: '',
+                    status: ''
+                },
+                allBookings: [
+                    {
+                        id: 1,
+                        bookedOn: '2025-07-28',
+                        bookingId: '2507L015',
+                        hall: {
+                            type: 'Lecture Hall',
+                            name: 'SH 314',
+                            department: 'Department of Computer Science'
+                        },
+                        purpose: {
+                            type: 'Event',
+                            detail: 'youtube'
+                        },
+                        dateTime: {
+                            date: '31-07-2025 (Thursday)',
+                            time: '4:30 PM'
+                        },
+                        status: 'Cancelled',
+                        reason: 'Change of plans'
+                    },
+                    {
+                        id: 2,
+                        bookedOn: '2025-07-24',
+                        bookingId: '2507L004',
+                        hall: {
+                            type: 'Lecture Hall',
+                            name: 'SH 314',
+                            department: 'Department of Computer Science'
+                        },
+                        purpose: {
+                            type: 'Class',
+                            detail: 'B.Tech. CSE'
+                        },
+                        dateTime: {
+                            date: '28-07-2025 (Monday)',
+                            time: '11:30 AM'
+                        },
+                        status: 'Cancelled',
+                        reason: 'Change of plans'
+                    },
+                     {
+                        id: 3,
+                        bookedOn: '2025-07-29',
+                        bookingId: '2507A001',
+                        hall: {
+                            type: 'Auditorium',
+                            name: 'J.N. Auditorium',
+                            department: 'University Central'
+                        },
+                        purpose: {
+                            type: 'Event',
+                            detail: 'Annual Tech Fest'
+                        },
+                        dateTime: {
+                            date: '01-08-2025 (Friday)',
+                            time: '10:00 AM'
+                        },
+                        status: 'Approved',
+                        reason: ''
+                    },
+                ],
+                
+                get uniqueHallNames() {
+                    const names = this.allBookings.map(b => b.hall.name);
+                    return [...new Set(names)];
+                },
+
+                get filteredBookings() {
+                    return this.allBookings.filter(booking => {
+                        const bookedDate = new Date(booking.bookedOn);
+                        const fromDate = this.filters.fromDate ? new Date(this.filters.fromDate) : null;
+                        const toDate = this.filters.toDate ? new Date(this.filters.toDate) : null;
+                        
+                        const bookingDateTime = new Date(booking.dateTime.date.split(' ')[0].split('-').reverse().join('-'));
+
+                        const startDateTime = this.filters.startDateTime ? new Date(this.filters.startDateTime) : null;
+                        const endDateTime = this.filters.endDateTime ? new Date(this.filters.endDateTime) : null;
+
+                        if (fromDate && bookedDate < fromDate) return false;
+                        if (toDate && bookedDate > toDate) return false;
+                        if (this.filters.hallType && booking.hall.type !== this.filters.hallType) return false;
+                        if (this.filters.hallName && booking.hall.name !== this.filters.hallName) return false;
+                        if (this.filters.purposeType && booking.purpose.type !== this.filters.purposeType) return false;
+                        if (startDateTime && bookingDateTime < startDateTime) return false;
+                        if (endDateTime && bookingDateTime > endDateTime) return false;
+                        if (this.filters.status && booking.status !== this.filters.status) return false;
+
+                        return true;
+                    });
+                },
+
+                applyFilters() {
+                    this.showDateFilterModal = false;
+                    this.showHallFilterModal = false;
+                    this.showPurposeFilterModal = false;
+                    this.showDateTimeFilterModal = false;
+                    this.showStatusFilterModal = false;
+                },
+                
+                clearFilters() {
+                    this.filters.fromDate = '';
+                    this.filters.toDate = '';
+                    this.filters.hallType = '';
+                    this.filters.hallName = '';
+                    this.filters.purposeType = '';
+                    this.filters.eventType = '';
+                    this.filters.courseName = '';
+                    this.filters.startDateTime = '';
+                    this.filters.endDateTime = '';
+                    this.filters.status = '';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

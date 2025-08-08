@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse & Book Hall</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-image: linear-gradient(to right, #14555F, #0B1940);
+            background-attachment: fixed;
+        }
+        .scrollable-dropdown::-webkit-scrollbar { width: 8px; }
+        .scrollable-dropdown::-webkit-scrollbar-track { background: #f1f1f1; }
+        .scrollable-dropdown::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+        .filter-btn.active {
+            background-color: #0B1940;
+            color: white;
+            border-color: #0B1940;
+        }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <div id="nav-placeholder"></div>
+    
+    <!-- Main Content -->
+    <main class="flex-grow p-6" x-data="browseAndBook()">
+        <div class="container mx-auto bg-white p-6 rounded-lg shadow-xl">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Browse & Book Hall</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <!-- Filters Column -->
+                <aside class="lg:col-span-1">
+                    <div class="space-y-6">
+                        <!-- Hall Type -->
+                        <div>
+                            <label class="font-semibold text-gray-700">Hall Type:</label>
+                            <div class="grid grid-cols-2 gap-2 mt-2">
+                                <button @click="filters.type = 'SEMINAR'" :class="{'active': filters.type === 'SEMINAR'}" class="filter-btn border p-2 rounded text-center transition-all">Seminar</button>
+                                <button @click="filters.type = 'AUDITORIUM'" :class="{'active': filters.type === 'AUDITORIUM'}" class="filter-btn border p-2 rounded text-center transition-all">Auditorium</button>
+                                <button @click="filters.type = 'LECTURE'" :class="{'active': filters.type === 'LECTURE'}" class="filter-btn border p-2 rounded text-center transition-all">Lecture Hall</button>
+                                <button @click="filters.type = 'CONFERENCE'" :class="{'active': filters.type === 'CONFERENCE'}" class="filter-btn border p-2 rounded text-center transition-all">Conference</button>
+                            </div>
+                        </div>
+
+                        <!-- School & Department with Search -->
+                        <div class="relative" @click.away="dropdowns.school = false">
+                            <label for="schoolSearch" class="font-semibold text-gray-700">School:</label>
+                            <input type="text" id="schoolSearch" x-model="searchTerms.school" @focus="dropdowns.school = true" @input.debounce.300ms="selectedSchoolId = null" placeholder="Search for a school..." class="w-full border-gray-300 rounded-md mt-1 p-2">
+                            <div x-show="dropdowns.school" x-transition x-cloak class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto scrollable-dropdown">
+                                <template x-if="isLoading.schools"><div class="px-4 py-2 text-sm text-gray-400">Loading...</div></template>
+                                <template x-for="option in filteredSchools" :key="option.value">
+                                    <div @click="selectOption('school', option.value)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="option.label"></div>
+                                </template>
+                                <template x-if="!isLoading.schools && filteredSchools.length === 0"><div class="px-4 py-2 text-sm text-gray-500">No results found.</div></template>
+                            </div>
+                        </div>
+                        <div class="relative" @click.away="dropdowns.department = false">
+                            <label for="departmentSearch" class="font-semibold text-gray-700">Department:</label>
+                            <input type="text" id="departmentSearch" x-model="searchTerms.department" @focus="dropdowns.department = true" @input.debounce.300ms="selectedDepartmentId = null" placeholder="Search for a department..." class="w-full border-gray-300 rounded-md mt-1 p-2">
+                             <div x-show="dropdowns.department" x-transition x-cloak class="absolute z-10 mt-1 w-full bg-white border rounded-md shadow-lg max-h-60 overflow-y-auto scrollable-dropdown">
+                                <template x-if="isLoading.departments"><div class="px-4 py-2 text-sm text-gray-400">Loading...</div></template>
+                                <template x-for="option in filteredDepartments" :key="option.value">
+                                    <div @click="selectOption('department', option.value)" class="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer" x-text="option.label"></div>
+                                </template>
+                                <template x-if="!isLoading.departments && filteredDepartments.length === 0"><div class="px-4 py-2 text-sm text-gray-500">No results found.</div></template>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="floor" class="font-semibold text-gray-700">Floor:</label>
+                            <select id="floor" x-model="filters.floor" class="w-full border-gray-300 rounded-md mt-1 p-2">
+                                <option value="">All Floors</option>
+                                <option value="GROUND">Ground</option>
+                                <option value="FIRST">First</option>
+                                <option value="SECOND">Second</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="zone" class="font-semibold text-gray-700">Zone:</label>
+                            <select id="zone" x-model="filters.zone" class="w-full border-gray-300 rounded-md mt-1 p-2">
+                                <option value="">All Zones</option>
+                                <option value="EAST">East</option>
+                                <option value="WEST">West</option>
+                                <option value="NORTH">North</option>
+                                <option value="SOUTH">South</option>
+                            </select>
+                        </div>
+
+                        <!-- Capacity -->
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <label class="font-semibold text-gray-700">Capacity</label>
+                                <button @click="filters.capacity = null" class="text-sm text-blue-600 hover:underline">Clear</button>
+                            </div>
+                            <div class="space-y-2 mt-2">
+                                <label class="flex items-center"><input type="radio" name="capacity" value="<50" x-model="filters.capacity" class="mr-2"> Less than 50</label>
+                                <label class="flex items-center"><input type="radio" name="capacity" value="50-100" x-model="filters.capacity" class="mr-2"> 50 to 100</label>
+                                <label class="flex items-center"><input type="radio" name="capacity" value=">100" x-model="filters.capacity" class="mr-2"> More than 100</label>
+                            </div>
+                        </div>
+
+                        <!-- Features -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="font-semibold text-gray-700">Features</label>
+                                <button @click="filters.features = []" class="text-sm text-blue-600 hover:underline">Clear</button>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="flex items-center"><input type="checkbox" value="PROJECTOR" x-model="filters.features" class="mr-2 rounded"> Projector</label>
+                                <label class="flex items-center"><input type="checkbox" value="SMART_BOARD" x-model="filters.features" class="mr-2 rounded"> Smartboard</label>
+                                <label class="flex items-center"><input type="checkbox" value="AC" x-model="filters.features" class="mr-2 rounded"> AC</label>
+                                <label class="flex items-center"><input type="checkbox" value="WIFI" x-model="filters.features" class="mr-2 rounded"> Wifi</label>
+                                <label class="flex items-center"><input type="checkbox" value="COMPUTER" x-model="filters.features" class="mr-2 rounded"> Computer</label>
+                                <label class="flex items-center"><input type="checkbox" value="AUDIO_SYSTEM" x-model="filters.features" class="mr-2 rounded"> Audio System</label>
+                                <label class="flex items-center"><input type="checkbox" value="PODIUM" x-model="filters.features" class="mr-2 rounded"> Podium</label>
+                                <label class="flex items-center"><input type="checkbox" value="WHITE_BOARD" x-model="filters.features" class="mr-2 rounded"> White Board</label>
+                                <label class="flex items-center"><input type="checkbox" value="BLACK_BOARD" x-model="filters.features" class="mr-2 rounded"> Black Board</label>
+                                <label class="flex items-center"><input type="checkbox" value="LIFT" x-model="filters.features" class="mr-2 rounded"> Lift</label>
+                                <label class="flex items-center"><input type="checkbox" value="RAMP" x-model="filters.features" class="mr-2 rounded"> Ramp</label>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Content Column -->
+                <div class="lg:col-span-3">
+                    <!-- Results -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-2xl font-bold text-gray-800">
+                                Available Halls (<span x-text="filteredHalls.length"></span>)
+                            </h3>
+                        </div>
+
+                        <!-- Halls Grid View -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <template x-if="isLoading.halls"><div class="col-span-full text-center py-10">Loading halls...</div></template>
+                            <template x-for="hall in filteredHalls" :key="hall.id">
+                                <div class="border rounded-lg p-4 flex flex-col bg-blue-50/50 transition-all duration-300 hover:shadow-lg">
+                                    <img :src="hall.imageUrl" alt="Hall Image" class="w-full h-40 object-cover rounded-md mb-4" :onerror="`this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/64748b?text=Image+Not+Found';`">
+                                    <h4 class="font-bold text-lg text-gray-900" x-text="hall.name"></h4>
+                                    <p class="text-sm text-gray-600" x-text="hall.departmentName"></p>
+                                    <p class="text-sm text-gray-600 mt-2">Capacity: <span class="font-semibold" x-text="hall.capacity"></span></p>
+                                    <div class="flex-grow"></div>
+                                    <div class="grid grid-cols-2 gap-2 mt-4">
+                                        <a :href="`details.html?hall_id=${hall.id}`" class="text-center bg-white border border-gray-400 text-gray-700 p-2 rounded hover:bg-gray-100">View</a>
+                                        <a :href="`book.html?hall_id=${hall.id}`" class="text-center bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Book</a>
+                                    </div>
+                                </div>
+                            </template>
+                             <template x-if="!isLoading.halls && filteredHalls.length === 0">
+                                <div class="col-span-full text-center py-10 text-gray-500">
+                                    <p class="text-xl">No halls match your criteria.</p>
+                                    <p>Try adjusting your filters.</p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[rgba(0,0,0,0.63)] text-white text-center p-4 mt-auto">
+        <p>&copy; 2025 Pondicherry University. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function browseAndBook() {
+            return {
+                // UI State
+                filters: {
+                    type: 'SEMINAR',
+                    capacity: null,
+                    features: [],
+                },
+                dropdowns: { school: false, department: false },
+                searchTerms: { school: '', department: '' },
+                isLoading: { schools: true, departments: true, halls: true },
+                
+                // Data
+                allHalls: [],
+                schoolOptions: [],
+                departmentOptions: [],
+                
+                // Selection State
+                selectedSchoolId: null,
+                selectedDepartmentId: null,
+                
+                init() {
+                    if (!getAuthHeaders()) {
+                        console.log("No auth token, redirecting...");
+                        logout();
+                        return;
+                    }
+
+                    this.fetchSchools();
+                    this.fetchDepartments().then(() => {
+                        this.fetchHalls();
+                    });
+
+                    this.$watch('selectedDepartmentId', (deptId) => {
+                        if (!deptId) return;
+                        const dept = this.departmentOptions.find(d => d.value === deptId);
+                        if (dept && dept.schoolId && this.selectedSchoolId !== dept.schoolId) {
+                            this.selectedSchoolId = dept.schoolId;
+                            const school = this.schoolOptions.find(s => s.value === dept.schoolId);
+                            if (school) this.searchTerms.school = school.label;
+                        }
+                    });
+
+                    this.$watch('selectedSchoolId', (schoolId) => {
+                        if (!schoolId) {
+                            this.selectedDepartmentId = null;
+                            this.searchTerms.department = '';
+                        }
+                    });
+                },
+
+                // --- Data Fetching ---
+                async fetchWithAuth(url, options = {}) {
+                    const headers = getAuthHeaders();
+                    if (!headers) {
+                        logout();
+                        throw new Error('User not authenticated');
+                    }
+                    const config = { ...options, headers: {...headers, ...options.headers} };
+                    const response = await fetch(url, config);
+                    if (response.status === 401) {
+                        logout();
+                        throw new Error('Authentication failed');
+                    }
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
+                        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                },
+
+                async fetchSchools() { 
+                    this.isLoading.schools = true; 
+                    try {
+                        const url = AppConfig.apiBaseUrl + AppConfig.endpoints.allschool;
+                        const data = await this.fetchWithAuth(url);
+                        this.schoolOptions = data.map(s => ({ value: s.unique_id, label: s.school_name }));
+                    } catch (e) { console.error("Could not load schools:", e.message); } 
+                    finally { this.isLoading.schools = false; } 
+                },
+                async fetchDepartments() { 
+                    this.isLoading.departments = true; 
+                    try {
+                        const url = AppConfig.apiBaseUrl + AppConfig.endpoints.alldept;
+                        const data = await this.fetchWithAuth(url);
+                        this.departmentOptions = data.map(d => ({ value: d.unique_id, label: d.department_name, schoolId: d.school_id }));
+                    } catch (e) { console.error("Could not load departments:", e.message); } 
+                    finally { this.isLoading.departments = false; } 
+                },
+                async fetchHalls() {
+                    this.isLoading.halls = true;
+                    try {
+                        const url = AppConfig.apiBaseUrl + AppConfig.endpoints.allHall;
+                        const data = await this.fetchWithAuth(url);
+                        
+                        this.allHalls = data.map(hall => {
+                            const dept = this.departmentOptions.find(d => d.value === hall.department_id);
+                            return { 
+                                id: hall.unique_id,
+                                name: hall.name,
+                                departmentId: hall.department_id,
+                                schoolId: hall.school_id,
+                                departmentName: dept ? dept.label : 'University Central',
+                                capacity: hall.capacity,
+                                type: hall.type, // SEMINAR, LECTURE etc.
+                                floor: hall.floor,
+                                zone: hall.zone,
+                                features: hall.features, // Expects an array like ['AC', 'PROJECTOR']
+                                imageUrl: hall.image_url1 || 'https://placehold.co/600x400/e2e8f0/64748b?text=Image+Not+Found'
+                            };
+                        });
+
+                    } catch(e) {
+                         console.error("Could not load halls:", e.message);
+                    } finally {
+                        this.isLoading.halls = false;
+                    }
+                },
+
+                // --- Computed Properties for Filtering ---
+                get filteredSchools() {
+                    if (!this.searchTerms.school) return this.schoolOptions;
+                    return this.schoolOptions.filter(o => o.label.toLowerCase().includes(this.searchTerms.school.toLowerCase()));
+                },
+                get filteredDepartments() {
+                    let depts = this.departmentOptions;
+                    if (this.selectedSchoolId) {
+                        depts = depts.filter(d => d.schoolId === this.selectedSchoolId);
+                    }
+                    if (!this.searchTerms.department) return depts;
+                    return depts.filter(o => o.label.toLowerCase().includes(this.searchTerms.department.toLowerCase()));
+                },
+                get filteredHalls() {
+                    if (this.isLoading.halls) return [];
+                    return this.allHalls.filter(hall => {
+                        if (this.filters.type && hall.type !== this.filters.type) return false;
+                        if (this.selectedSchoolId && hall.schoolId !== this.selectedSchoolId) return false;
+                        if (this.selectedDepartmentId && hall.departmentId !== this.selectedDepartmentId) return false;
+                        if (this.filters.floor && hall.floor !== this.filters.floor) return false;
+                        if (this.filters.zone && hall.zone !== this.filters.zone) return false;
+                        
+                        if (this.filters.capacity) {
+                            const capacity = hall.capacity;
+                            if (this.filters.capacity === '<50' && capacity >= 50) return false;
+                            if (this.filters.capacity === '50-100' && (capacity < 50 || capacity > 100)) return false;
+                            if (this.filters.capacity === '>100' && capacity <= 100) return false;
+                        }
+
+                        if (this.filters.features.length > 0) {
+                            if (!this.filters.features.every(feature => hall.features.includes(feature))) return false;
+                        }
+                        return true;
+                    });
+                },
+
+                // --- UI Actions ---
+                selectOption(type, id) {
+                    if (type === 'school') {
+                        this.selectedSchoolId = id;
+                        this.searchTerms.school = this.schoolOptions.find(o => o.value === id)?.label || '';
+                        this.selectedDepartmentId = null;
+                        this.searchTerms.department = '';
+                    } else if (type === 'department') {
+                        this.selectedDepartmentId = id;
+                        this.searchTerms.department = this.departmentOptions.find(o => o.value === id)?.label || '';
+                    }
+                    this.dropdowns[type] = false;
+                },
+            }
+        }
+    </script>
+    <script src="layout.js"></script>
+</body>
+</html>
